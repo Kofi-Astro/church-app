@@ -5,6 +5,10 @@ Phase 0 scope: app boots, has structured logging, and exposes a health
 check the CI pipeline and hosting platform can use.
 
 Phase 1 adds the member/household directory and attendance routers.
+Phase 2 adds sermons and church-wide settings (e.g. the livestream URL);
+the Bible reader itself calls a public third-party API directly from the
+mobile app rather than through this backend — see
+mobile/lib/features/bible/bible_api_service.dart.
 """
 import logging
 from contextlib import asynccontextmanager
@@ -12,8 +16,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI  # type: ignore[import]
 
 from app.api.v1.attendance import router as attendance_router
+from app.api.v1.church_settings import router as church_settings_router
 from app.api.v1.households import router as households_router
 from app.api.v1.members import router as members_router
+from app.api.v1.sermons import router as sermons_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -43,6 +49,8 @@ app = FastAPI(
 app.include_router(households_router, prefix="/api/v1")
 app.include_router(members_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")
+app.include_router(sermons_router, prefix="/api/v1")
+app.include_router(church_settings_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["system"])

@@ -33,6 +33,7 @@ Run migrations in order:
 ```
 0001_init.sql
 0002_attendance.sql
+0003_content.sql
 ```
 
 ## 3. Row-Level Security (RLS)

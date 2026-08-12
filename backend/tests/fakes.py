@@ -120,3 +120,59 @@ class FakeAttendanceRepository:
                 }
             )
         return rows
+
+
+class FakeSermonRepository:
+    def __init__(self):
+        self._rows: dict[str, dict] = {}
+
+    def list(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        series: str | None = None,
+        speaker: str | None = None,
+        search: str | None = None,
+    ):
+        items = list(self._rows.values())
+        if series:
+            items = [r for r in items if r.get("series") == series]
+        if speaker:
+            items = [r for r in items if r.get("speaker") == speaker]
+        if search:
+            term = search.lower()
+            items = [r for r in items if term in (r.get("title") or "").lower()]
+        items = sorted(items, key=lambda r: r["sermon_date"], reverse=True)
+        return items[offset : offset + limit], len(items)
+
+    def get(self, sermon_id: str):
+        return self._rows.get(sermon_id)
+
+    def create(self, data: dict):
+        row = {"speaker": None, "series": None, "video_url": None, "description": None, **data,
+               "id": _new_id(), "created_at": _now()}
+        self._rows[row["id"]] = row
+        return row
+
+    def update(self, sermon_id: str, data: dict):
+        if sermon_id not in self._rows:
+            return None
+        self._rows[sermon_id].update(data)
+        return self._rows[sermon_id]
+
+    def delete(self, sermon_id: str) -> bool:
+        return self._rows.pop(sermon_id, None) is not None
+
+
+class FakeChurchSettingsRepository:
+    def __init__(self):
+        self._row = {"livestream_url": None, "updated_at": _now()}
+
+    def get(self):
+        return self._row
+
+    def update(self, data: dict):
+        self._row.update(data)
+        self._row["updated_at"] = _now()
+        return self._row

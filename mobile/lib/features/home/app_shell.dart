@@ -4,7 +4,13 @@ import '../../core/auth/auth_service.dart';
 import '../../core/network/api_client.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../attendance/attendance_service.dart';
+import '../bible/bible_api_service.dart';
+import '../bible/bible_cache.dart';
+import '../bible/bible_sync_service.dart';
+import '../bible/screens/bible_reader_screen.dart';
 import '../directory/directory_service.dart';
+import '../sermons/screens/sermon_list_screen.dart';
+import '../sermons/sermon_service.dart';
 
 /// The signed-in app shell: bottom-nav tabs gated by role. "Admin" only
 /// shows for roles that can act on it; "Giving" is visible to everyone
@@ -32,12 +38,26 @@ class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
   late final DirectoryService _directoryService;
   late final AttendanceService _attendanceService;
+  late final SermonService _sermonService;
+  late final BibleApiService _bibleApiService;
+  late final BibleCache _bibleCache;
+  late final BibleSyncService _bibleSyncService;
 
   @override
   void initState() {
     super.initState();
     _directoryService = DirectoryService(widget.apiClient);
     _attendanceService = AttendanceService(widget.apiClient);
+    _sermonService = SermonService(widget.apiClient);
+    _bibleApiService = BibleApiService();
+    _bibleCache = BibleCache();
+    _bibleSyncService = BibleSyncService();
+  }
+
+  @override
+  void dispose() {
+    _bibleApiService.dispose();
+    super.dispose();
   }
 
   @override
@@ -50,6 +70,21 @@ class _AppShellState extends State<AppShell> {
         icon: Icons.home_outlined,
         builder: (context) => _HomeTab(apiClient: widget.apiClient, profile: widget.profile),
       ),
+      _Tab(
+        label: 'Bible',
+        icon: Icons.menu_book_outlined,
+        builder: (context) => BibleReaderScreen(
+          apiService: _bibleApiService,
+          cache: _bibleCache,
+          syncService: _bibleSyncService,
+        ),
+      ),
+      _Tab(
+        label: 'Sermons',
+        icon: Icons.church_outlined,
+        builder: (context) =>
+            SermonListScreen(sermonService: _sermonService, profile: widget.profile),
+      ),
       if (showAdminTab)
         _Tab(
           label: 'Admin',
@@ -58,6 +93,7 @@ class _AppShellState extends State<AppShell> {
             profile: widget.profile,
             directoryService: _directoryService,
             attendanceService: _attendanceService,
+            sermonService: _sermonService,
           ),
         ),
       _Tab(

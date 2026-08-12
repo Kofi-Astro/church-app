@@ -7,6 +7,8 @@ import '../attendance/screens/service_list_screen.dart';
 import '../directory/directory_service.dart';
 import '../directory/screens/household_list_screen.dart';
 import '../directory/screens/member_search_screen.dart';
+import '../sermons/screens/livestream_settings_screen.dart';
+import '../sermons/sermon_service.dart';
 
 /// Combines directory and attendance into one admin view with role-gated
 /// sections, per the Phase 1 roadmap. Each section links out to the
@@ -16,12 +18,14 @@ class AdminDashboardScreen extends StatelessWidget {
   final AppProfile profile;
   final DirectoryService directoryService;
   final AttendanceService attendanceService;
+  final SermonService sermonService;
 
   const AdminDashboardScreen({
     super.key,
     required this.profile,
     required this.directoryService,
     required this.attendanceService,
+    required this.sermonService,
   });
 
   @override
@@ -93,6 +97,20 @@ class AdminDashboardScreen extends StatelessWidget {
                 ),
               ),
             ),
+          if (profile.role == AppRole.admin) ...[
+            const _SectionHeader('Content'),
+            ListTile(
+              leading: const Icon(Icons.live_tv_outlined),
+              title: const Text('Livestream URL'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LivestreamSettingsScreen(sermonService: sermonService),
+                ),
+              ),
+            ),
+          ],
           if (canSeeGivingPreview) ...[
             const _SectionHeader('Giving'),
             const ListTile(
