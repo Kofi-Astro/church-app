@@ -1,6 +1,6 @@
 # Threat Model (living document — revisit every phase)
 
-Last updated: Phase 0.
+Last updated: Phase 4.
 
 ## What data is sensitive here
 
@@ -53,9 +53,28 @@ Last updated: Phase 0.
 
 ## To revisit each phase
 
-- [ ] Phase 1: attendance/directory RLS negative-tested
-- [ ] Phase 2: sermon storage bucket read/write policies reviewed
-- [ ] Phase 3: group materials scoped correctly to group membership
-- [ ] Phase 4: prayer-request visibility adversarially tested
+Everything below marked done is verified at the **API layer**
+(`backend/tests/`, using role/account overrides against the real FastAPI
+routes) — none of it has been re-verified against **live Postgres RLS**
+yet, because no Supabase project exists. That's a real gap, not a
+formality: RLS is the actual enforcement layer for anything the mobile
+app reaches directly (Bible bookmarks/highlights, reading-plan progress),
+and defense-in-depth for everything routed through the backend. Once
+`infra/infra.md`'s setup is done, re-run the equivalent negative tests
+by hand against the live project before any real member data goes in.
+
+- [x] Phase 1: attendance/directory role checks negative-tested
+      (`test_households.py`, `test_members.py`, `test_attendance.py`)
+- [ ] Phase 2: sermon library only supports admin-pasted video links, not
+      file upload — there's no storage bucket yet, so this item doesn't
+      apply until one exists
+- [x] Phase 3: group materials/roster scoped to group membership,
+      negative-tested (`test_small_groups.py` — a member of group A gets
+      403 on group B's materials, same for a non-member)
+- [x] Phase 4: prayer-request visibility adversarially tested
+      (`test_prayer_requests.py` — a stranger, and separately an admin,
+      both get 404 on someone else's private request)
 - [ ] Phase 5: Paystack webhook signature verification in place; payment
       logs audited for accidental card/account data
+- [ ] All phases: re-verify the above against live Supabase RLS once
+      `church-app-dev` exists, not just the API-layer tests above
