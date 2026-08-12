@@ -7,14 +7,18 @@ from app.repositories.attendance import get_attendance_repository
 from app.repositories.church_settings import get_church_settings_repository
 from app.repositories.households import get_household_repository
 from app.repositories.members import get_member_repository
+from app.repositories.reading_plans import get_reading_plan_repository
 from app.repositories.sermons import get_sermon_repository
+from app.repositories.small_groups import get_small_group_repository
 from app.schemas.profile import Profile, Role
 from tests.fakes import (
     FakeAttendanceRepository,
     FakeChurchSettingsRepository,
     FakeHouseholdRepository,
     FakeMemberRepository,
+    FakeReadingPlanRepository,
     FakeSermonRepository,
+    FakeSmallGroupRepository,
 )
 
 
@@ -49,25 +53,53 @@ def fake_church_settings():
 
 
 @pytest.fixture
-def client(fake_households, fake_members, fake_attendance, fake_sermons, fake_church_settings):
+def fake_reading_plans():
+    return FakeReadingPlanRepository()
+
+
+@pytest.fixture
+def fake_small_groups():
+    return FakeSmallGroupRepository()
+
+
+@pytest.fixture
+def client(
+    fake_households,
+    fake_members,
+    fake_attendance,
+    fake_sermons,
+    fake_church_settings,
+    fake_reading_plans,
+    fake_small_groups,
+):
     app.dependency_overrides[get_household_repository] = lambda: fake_households
     app.dependency_overrides[get_member_repository] = lambda: fake_members
     app.dependency_overrides[get_attendance_repository] = lambda: fake_attendance
     app.dependency_overrides[get_sermon_repository] = lambda: fake_sermons
     app.dependency_overrides[get_church_settings_repository] = lambda: fake_church_settings
+    app.dependency_overrides[get_reading_plan_repository] = lambda: fake_reading_plans
+    app.dependency_overrides[get_small_group_repository] = lambda: fake_small_groups
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+def as_profile(profile_id: str, role: Role):
+    """Override get_current_profile as a specific (id, role) pair — used
+    directly (rather than through as_admin/as_member/...) whenever a test
+    needs to distinguish between two different users of the same role,
+    e.g. two ordinary members in different small groups."""
+
+    async def _override() -> Profile:
+        return Profile(id=profile_id, full_name="Test User", role=role)
+
+    return _override
 
 
 def as_role(role: Role):
     """Override get_current_profile so a test can act as a given role
     without a real Supabase JWT — mirrors the roadmap's "negative test
     with a non-privileged account" pattern, just at the API layer."""
-
-    async def _override() -> Profile:
-        return Profile(id="00000000-0000-0000-0000-000000000001", full_name="Test User", role=role)
-
-    return _override
+    return as_profile("00000000-0000-0000-0000-000000000001", role)
 
 
 @pytest.fixture

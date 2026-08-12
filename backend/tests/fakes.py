@@ -176,3 +176,89 @@ class FakeChurchSettingsRepository:
         self._row.update(data)
         self._row["updated_at"] = _now()
         return self._row
+
+
+class FakeReadingPlanRepository:
+    def __init__(self):
+        self._plans: dict[str, dict] = {}
+        self._days: dict[str, dict] = {}
+
+    def list_plans(self):
+        return sorted(self._plans.values(), key=lambda r: r["title"])
+
+    def get_plan(self, plan_id: str):
+        return self._plans.get(plan_id)
+
+    def create_plan(self, data: dict):
+        row = {"description": None, **data, "id": _new_id(), "created_at": _now()}
+        self._plans[row["id"]] = row
+        return row
+
+    def list_days(self, plan_id: str):
+        days = [d for d in self._days.values() if d["plan_id"] == plan_id]
+        return sorted(days, key=lambda d: d["day_number"])
+
+    def create_day(self, data: dict):
+        row = {"title": None, **data, "id": _new_id()}
+        self._days[row["id"]] = row
+        return row
+
+
+class FakeSmallGroupRepository:
+    def __init__(self):
+        self._groups: dict[str, dict] = {}
+        self._members: set[tuple[str, str]] = set()
+        self._materials: dict[str, dict] = {}
+
+    def list_groups(self):
+        return sorted(self._groups.values(), key=lambda r: r["name"])
+
+    def get_group(self, group_id: str):
+        return self._groups.get(group_id)
+
+    def create_group(self, data: dict):
+        row = {
+            "description": None,
+            "leader_id": None,
+            **data,
+            "id": _new_id(),
+            "created_at": _now(),
+        }
+        self._groups[row["id"]] = row
+        return row
+
+    def is_leader(self, group_id: str, profile_id: str) -> bool:
+        group = self.get_group(group_id)
+        return group is not None and group.get("leader_id") == profile_id
+
+    def list_members(self, group_id: str):
+        return [
+            {"group_id": g, "profile_id": p, "joined_at": _now()}
+            for (g, p) in self._members
+            if g == group_id
+        ]
+
+    def is_member(self, group_id: str, profile_id: str) -> bool:
+        return (group_id, profile_id) in self._members
+
+    def add_member(self, group_id: str, profile_id: str):
+        self._members.add((group_id, profile_id))
+        return {"group_id": group_id, "profile_id": profile_id, "joined_at": _now()}
+
+    def remove_member(self, group_id: str, profile_id: str) -> bool:
+        if (group_id, profile_id) not in self._members:
+            return False
+        self._members.discard((group_id, profile_id))
+        return True
+
+    def list_materials(self, group_id: str):
+        items = [m for m in self._materials.values() if m["group_id"] == group_id]
+        return sorted(items, key=lambda m: m["created_at"], reverse=True)
+
+    def create_material(self, data: dict):
+        row = {"url": None, "description": None, **data, "id": _new_id(), "created_at": _now()}
+        self._materials[row["id"]] = row
+        return row
+
+    def delete_material(self, material_id: str) -> bool:
+        return self._materials.pop(material_id, None) is not None

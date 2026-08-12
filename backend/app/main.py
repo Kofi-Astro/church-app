@@ -9,6 +9,9 @@ Phase 2 adds sermons and church-wide settings (e.g. the livestream URL);
 the Bible reader itself calls a public third-party API directly from the
 mobile app rather than through this backend — see
 mobile/lib/features/bible/bible_api_service.dart.
+Phase 3 adds reading plans and small groups (materials scoped to group
+membership); per-user reading progress goes straight to Supabase from
+the mobile app, same pattern as the Phase 2 Bible bookmarks.
 """
 import logging
 from contextlib import asynccontextmanager
@@ -19,7 +22,9 @@ from app.api.v1.attendance import router as attendance_router
 from app.api.v1.church_settings import router as church_settings_router
 from app.api.v1.households import router as households_router
 from app.api.v1.members import router as members_router
+from app.api.v1.reading_plans import router as reading_plans_router
 from app.api.v1.sermons import router as sermons_router
+from app.api.v1.small_groups import router as small_groups_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -51,6 +56,8 @@ app.include_router(members_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")
 app.include_router(sermons_router, prefix="/api/v1")
 app.include_router(church_settings_router, prefix="/api/v1")
+app.include_router(reading_plans_router, prefix="/api/v1")
+app.include_router(small_groups_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["system"])

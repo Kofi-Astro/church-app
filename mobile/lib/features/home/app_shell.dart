@@ -9,8 +9,10 @@ import '../bible/bible_cache.dart';
 import '../bible/bible_sync_service.dart';
 import '../bible/screens/bible_reader_screen.dart';
 import '../directory/directory_service.dart';
-import '../sermons/screens/sermon_list_screen.dart';
+import '../groups/group_service.dart';
+import '../reading_plans/reading_plan_service.dart';
 import '../sermons/sermon_service.dart';
+import 'grow_tab.dart';
 
 /// The signed-in app shell: bottom-nav tabs gated by role. "Admin" only
 /// shows for roles that can act on it; "Giving" is visible to everyone
@@ -39,6 +41,8 @@ class _AppShellState extends State<AppShell> {
   late final DirectoryService _directoryService;
   late final AttendanceService _attendanceService;
   late final SermonService _sermonService;
+  late final ReadingPlanService _readingPlanService;
+  late final GroupService _groupService;
   late final BibleApiService _bibleApiService;
   late final BibleCache _bibleCache;
   late final BibleSyncService _bibleSyncService;
@@ -49,6 +53,8 @@ class _AppShellState extends State<AppShell> {
     _directoryService = DirectoryService(widget.apiClient);
     _attendanceService = AttendanceService(widget.apiClient);
     _sermonService = SermonService(widget.apiClient);
+    _readingPlanService = ReadingPlanService(widget.apiClient);
+    _groupService = GroupService(widget.apiClient);
     _bibleApiService = BibleApiService();
     _bibleCache = BibleCache();
     _bibleSyncService = BibleSyncService();
@@ -80,10 +86,15 @@ class _AppShellState extends State<AppShell> {
         ),
       ),
       _Tab(
-        label: 'Sermons',
+        label: 'Grow',
         icon: Icons.church_outlined,
-        builder: (context) =>
-            SermonListScreen(sermonService: _sermonService, profile: widget.profile),
+        builder: (context) => GrowTab(
+          sermonService: _sermonService,
+          readingPlanService: _readingPlanService,
+          groupService: _groupService,
+          directoryService: _directoryService,
+          profile: widget.profile,
+        ),
       ),
       if (showAdminTab)
         _Tab(
