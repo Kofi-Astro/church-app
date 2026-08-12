@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
+import '../../../core/notifications/reminder_service.dart';
 import '../models.dart';
 import '../reading_plan_service.dart';
 import 'reading_plan_detail_screen.dart';
@@ -16,14 +17,18 @@ class ReadingPlanListScreen extends StatefulWidget {
 }
 
 class _ReadingPlanListScreenState extends State<ReadingPlanListScreen> {
+  final _reminderService = ReminderService();
   List<ReadingPlan> _plans = [];
   bool _loading = true;
   String? _error;
+  bool _reminderEnabled = false;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 7, minute: 0);
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadReminderState();
   }
 
   Future<void> _load() async {
@@ -41,46 +46,86 @@ class _ReadingPlanListScreenState extends State<ReadingPlanListScreen> {
     }
   }
 
+  Future<void> _loadReminderState() async {
+    final scheduled = await _reminderService.isScheduled();
+    if (mounted) setState(() => _reminderEnabled = scheduled);
+  }
+
+  Future<void> _toggleReminder(bool enabled) async {
+    if (enabled) {
+      final granted = await _reminderService.requestPermission();
+      if (!granted) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Notification permission was denied.')));
+        return;
+      }
+      await _reminderService.scheduleDailyReminder(_reminderTime);
+    } else {
+      await _reminderService.cancelReminder();
+    }
+    setState(() => _reminderEnabled = enabled);
+  }
+
+  Future<void> _pickReminderTime() async {
+    final picked = await showTimePicker(context: context, initialTime: _reminderTime);
+    if (picked == null) return;
+    setState(() => _reminderTime = picked);
+    if (_reminderEnabled) {
+      await _reminderService.scheduleDailyReminder(_reminderTime);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Reading Plans')),
       body: RefreshIndicator(
         onRefresh: _load,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(child: Text(_error!))
-                : _plans.isEmpty
-                    ? ListView(
-                        children: const [
-                          Padding(
-                            padding: EdgeInsets.all(32),
-                            child: Text('No reading plans yet.', textAlign: TextAlign.center),
-                          ),
-                        ],
-                      )
-                    : ListView.builder(
-                        itemCount: _plans.length,
-                        itemBuilder: (context, index) {
-                          final plan = _plans[index];
-                          return ListTile(
-                            title: Text(plan.title),
-                            subtitle: Text(plan.planType.name),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ReadingPlanDetailScreen(
-                                  plan: plan,
-                                  planService: widget.planService,
-                                  profile: widget.profile,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+        child: ListView(
+          children: [
+            SwitchListTile(
+              title: const Text('Daily reading reminder'),
+              subtitle: Text('Every day at ${_reminderTime.format(context)}'),
+              value: _reminderEnabled,
+              onChanged: _toggleReminder,
+              secondary: IconButton(
+                icon: const Icon(Icons.access_time),
+                onPressed: _pickReminderTime,
+              ),
+            ),
+            const Divider(height: 1),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              Padding(padding: const EdgeInsets.all(16), child: Text(_error!))
+            else if (_plans.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('No reading plans yet.', textAlign: TextAlign.center),
+              )
+            else
+              for (final plan in _plans)
+                ListTile(
+                  title: Text(plan.title),
+                  subtitle: Text(plan.planType.name),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReadingPlanDetailScreen(
+                        plan: plan,
+                        planService: widget.planService,
+                        profile: widget.profile,
                       ),
+                    ),
+                  ),
+                ),
+          ],
+        ),
       ),
     );
   }

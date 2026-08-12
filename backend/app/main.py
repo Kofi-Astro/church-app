@@ -12,6 +12,9 @@ mobile/lib/features/bible/bible_api_service.dart.
 Phase 3 adds reading plans and small groups (materials scoped to group
 membership); per-user reading progress goes straight to Supabase from
 the mobile app, same pattern as the Phase 2 Bible bookmarks.
+Phase 4 adds prayer requests (public/leaders/private visibility — the
+highest-stakes table in the app, see app/repositories/prayer_requests.py)
+and events with RSVP.
 """
 import logging
 from contextlib import asynccontextmanager
@@ -20,8 +23,10 @@ from fastapi import FastAPI  # type: ignore[import]
 
 from app.api.v1.attendance import router as attendance_router
 from app.api.v1.church_settings import router as church_settings_router
+from app.api.v1.events import router as events_router
 from app.api.v1.households import router as households_router
 from app.api.v1.members import router as members_router
+from app.api.v1.prayer_requests import router as prayer_requests_router
 from app.api.v1.reading_plans import router as reading_plans_router
 from app.api.v1.sermons import router as sermons_router
 from app.api.v1.small_groups import router as small_groups_router
@@ -58,6 +63,8 @@ app.include_router(sermons_router, prefix="/api/v1")
 app.include_router(church_settings_router, prefix="/api/v1")
 app.include_router(reading_plans_router, prefix="/api/v1")
 app.include_router(small_groups_router, prefix="/api/v1")
+app.include_router(prayer_requests_router, prefix="/api/v1")
+app.include_router(events_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["system"])

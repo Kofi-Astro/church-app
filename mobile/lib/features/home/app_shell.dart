@@ -9,9 +9,12 @@ import '../bible/bible_cache.dart';
 import '../bible/bible_sync_service.dart';
 import '../bible/screens/bible_reader_screen.dart';
 import '../directory/directory_service.dart';
+import '../events/event_service.dart';
 import '../groups/group_service.dart';
+import '../prayer/prayer_service.dart';
 import '../reading_plans/reading_plan_service.dart';
 import '../sermons/sermon_service.dart';
+import 'community_tab.dart';
 import 'grow_tab.dart';
 
 /// The signed-in app shell: bottom-nav tabs gated by role. "Admin" only
@@ -43,6 +46,8 @@ class _AppShellState extends State<AppShell> {
   late final SermonService _sermonService;
   late final ReadingPlanService _readingPlanService;
   late final GroupService _groupService;
+  late final PrayerService _prayerService;
+  late final EventService _eventService;
   late final BibleApiService _bibleApiService;
   late final BibleCache _bibleCache;
   late final BibleSyncService _bibleSyncService;
@@ -55,6 +60,8 @@ class _AppShellState extends State<AppShell> {
     _sermonService = SermonService(widget.apiClient);
     _readingPlanService = ReadingPlanService(widget.apiClient);
     _groupService = GroupService(widget.apiClient);
+    _prayerService = PrayerService(widget.apiClient);
+    _eventService = EventService(widget.apiClient);
     _bibleApiService = BibleApiService();
     _bibleCache = BibleCache();
     _bibleSyncService = BibleSyncService();
@@ -93,6 +100,15 @@ class _AppShellState extends State<AppShell> {
           readingPlanService: _readingPlanService,
           groupService: _groupService,
           directoryService: _directoryService,
+          profile: widget.profile,
+        ),
+      ),
+      _Tab(
+        label: 'Community',
+        icon: Icons.people_alt_outlined,
+        builder: (context) => CommunityTab(
+          prayerService: _prayerService,
+          eventService: _eventService,
           profile: widget.profile,
         ),
       ),

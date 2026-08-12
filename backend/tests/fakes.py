@@ -262,3 +262,71 @@ class FakeSmallGroupRepository:
 
     def delete_material(self, material_id: str) -> bool:
         return self._materials.pop(material_id, None) is not None
+
+
+class FakePrayerRequestRepository:
+    def __init__(self):
+        self._requests: dict[str, dict] = {}
+        self._interactions: set[tuple[str, str]] = set()
+
+    def create(self, data: dict):
+        row = {**data, "id": _new_id(), "created_at": _now()}
+        self._requests[row["id"]] = row
+        return row
+
+    def list_all(self):
+        return sorted(self._requests.values(), key=lambda r: r["created_at"], reverse=True)
+
+    def get(self, request_id: str):
+        return self._requests.get(request_id)
+
+    def delete(self, request_id: str) -> bool:
+        return self._requests.pop(request_id, None) is not None
+
+    def praying_count(self, request_id: str) -> int:
+        return sum(1 for (rid, _) in self._interactions if rid == request_id)
+
+    def is_praying(self, request_id: str, profile_id: str) -> bool:
+        return (request_id, profile_id) in self._interactions
+
+    def add_interaction(self, request_id: str, profile_id: str) -> None:
+        self._interactions.add((request_id, profile_id))
+
+    def remove_interaction(self, request_id: str, profile_id: str) -> None:
+        self._interactions.discard((request_id, profile_id))
+
+
+class FakeEventRepository:
+    def __init__(self):
+        self._events: dict[str, dict] = {}
+        self._rsvps: dict[tuple[str, str], str] = {}
+
+    def list(self):
+        return sorted(self._events.values(), key=lambda e: e["event_date"])
+
+    def get(self, event_id: str):
+        return self._events.get(event_id)
+
+    def create(self, data: dict):
+        row = {"description": None, "location": None, **data, "id": _new_id(), "created_at": _now()}
+        self._events[row["id"]] = row
+        return row
+
+    def delete(self, event_id: str) -> bool:
+        return self._events.pop(event_id, None) is not None
+
+    def rsvp_counts(self, event_id: str):
+        counts = {"going": 0, "maybe": 0, "not_going": 0}
+        for (eid, _), status in self._rsvps.items():
+            if eid == event_id:
+                counts[status] += 1
+        return counts
+
+    def my_rsvp(self, event_id: str, profile_id: str):
+        return self._rsvps.get((event_id, profile_id))
+
+    def upsert_rsvp(self, event_id: str, profile_id: str, status: str) -> None:
+        self._rsvps[(event_id, profile_id)] = status
+
+    def remove_rsvp(self, event_id: str, profile_id: str) -> None:
+        self._rsvps.pop((event_id, profile_id), None)

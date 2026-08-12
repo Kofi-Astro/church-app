@@ -86,6 +86,15 @@ class ApiClient {
     return _decode(response);
   }
 
+  Future<dynamic> put(String path, {Map<String, dynamic>? body}) async {
+    final response = await _http.put(
+      _uri(path),
+      headers: await _headers(),
+      body: body == null ? null : jsonEncode(body),
+    );
+    return _decode(response);
+  }
+
   Future<dynamic> patch(String path, {Map<String, dynamic>? body}) async {
     final response = await _http.patch(
       _uri(path),
@@ -95,9 +104,12 @@ class ApiClient {
     return _decode(response);
   }
 
-  Future<void> delete(String path) async {
+  /// Returns the decoded body (null for a 204/empty response) — some
+  /// DELETE endpoints return the updated resource (e.g. unpray returns
+  /// the prayer request with its new count), others return nothing.
+  Future<dynamic> delete(String path) async {
     final response = await _http.delete(_uri(path), headers: await _headers());
-    _decode(response);
+    return _decode(response);
   }
 
   Future<Map<String, dynamic>> health() async => await get('/health') as Map<String, dynamic>;

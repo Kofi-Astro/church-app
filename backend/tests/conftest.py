@@ -5,8 +5,10 @@ from app.core.deps import get_current_profile
 from app.main import app
 from app.repositories.attendance import get_attendance_repository
 from app.repositories.church_settings import get_church_settings_repository
+from app.repositories.events import get_event_repository
 from app.repositories.households import get_household_repository
 from app.repositories.members import get_member_repository
+from app.repositories.prayer_requests import get_prayer_request_repository
 from app.repositories.reading_plans import get_reading_plan_repository
 from app.repositories.sermons import get_sermon_repository
 from app.repositories.small_groups import get_small_group_repository
@@ -14,8 +16,10 @@ from app.schemas.profile import Profile, Role
 from tests.fakes import (
     FakeAttendanceRepository,
     FakeChurchSettingsRepository,
+    FakeEventRepository,
     FakeHouseholdRepository,
     FakeMemberRepository,
+    FakePrayerRequestRepository,
     FakeReadingPlanRepository,
     FakeSermonRepository,
     FakeSmallGroupRepository,
@@ -63,6 +67,16 @@ def fake_small_groups():
 
 
 @pytest.fixture
+def fake_prayer_requests():
+    return FakePrayerRequestRepository()
+
+
+@pytest.fixture
+def fake_events():
+    return FakeEventRepository()
+
+
+@pytest.fixture
 def client(
     fake_households,
     fake_members,
@@ -71,6 +85,8 @@ def client(
     fake_church_settings,
     fake_reading_plans,
     fake_small_groups,
+    fake_prayer_requests,
+    fake_events,
 ):
     app.dependency_overrides[get_household_repository] = lambda: fake_households
     app.dependency_overrides[get_member_repository] = lambda: fake_members
@@ -79,6 +95,8 @@ def client(
     app.dependency_overrides[get_church_settings_repository] = lambda: fake_church_settings
     app.dependency_overrides[get_reading_plan_repository] = lambda: fake_reading_plans
     app.dependency_overrides[get_small_group_repository] = lambda: fake_small_groups
+    app.dependency_overrides[get_prayer_request_repository] = lambda: fake_prayer_requests
+    app.dependency_overrides[get_event_repository] = lambda: fake_events
     yield TestClient(app)
     app.dependency_overrides.clear()
 
