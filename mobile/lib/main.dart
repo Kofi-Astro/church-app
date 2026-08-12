@@ -1,54 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/auth/auth_service.dart';
 import 'core/config/env_config.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
+import 'features/home/auth_gate.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final config = EnvConfig.fromDartDefines();
+
+  if (config.supabaseUrl.isNotEmpty && config.supabaseAnonKey.isNotEmpty) {
+    // supabase_flutter's newer SDK calls this the "publishable key"; we
+    // keep calling it the anon key in our own config/docs since that's
+    // still the term the Supabase dashboard itself uses.
+    await Supabase.initialize(url: config.supabaseUrl, publishableKey: config.supabaseAnonKey);
+  }
+
   runApp(ChurchApp(config: config));
 }
 
-/// Root widget. This is intentionally a thin shell for Phase 0 — real
-/// features (directory, attendance, Bible reader, ...) live under
-/// `lib/features/<feature_name>/` starting in Phase 1, each with its own
-/// screens, models, and API calls, so the app stays organized as it grows.
-class ChurchApp extends StatelessWidget {
+/// Root widget. Everything under `lib/features/<feature_name>/` gets its
+/// screens, models, and API calls; this file just wires config + auth +
+/// the API client together and picks the right theme.
+class ChurchApp extends StatefulWidget {
   final EnvConfig config;
 
   const ChurchApp({super.key, required this.config});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Church App',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      home: HomeShell(config: config),
-    );
-  }
+  State<ChurchApp> createState() => _ChurchAppState();
 }
 
-/// Temporary Phase 0 landing screen — proves the app boots and can reach
-/// the backend health check. Gets replaced by real navigation (directory,
-/// content, community tabs) in Phase 1.
-class HomeShell extends StatefulWidget {
-  final EnvConfig config;
-
-  const HomeShell({super.key, required this.config});
-
-  @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
+class _ChurchAppState extends State<ChurchApp> {
+  late final AuthService _authService;
   late final ApiClient _apiClient;
-  String _status = 'Not checked yet';
+
+  bool get _supabaseConfigured =>
+      widget.config.supabaseUrl.isNotEmpty && widget.config.supabaseAnonKey.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _apiClient = ApiClient(config: widget.config);
+    _authService = AuthService();
+    _apiClient = ApiClient(config: widget.config, getAccessToken: _currentAccessToken);
   }
 
   @override
@@ -57,37 +53,45 @@ class _HomeShellState extends State<HomeShell> {
     super.dispose();
   }
 
-  Future<void> _checkBackend() async {
-    setState(() => _status = 'Checking...');
-    try {
-      final result = await _apiClient.health();
-      setState(() => _status = 'Backend says: ${result['status']} '
-          '(${result['environment']})');
-    } catch (e) {
-      setState(() => _status = 'Could not reach backend: $e');
-    }
+  Future<String?> _currentAccessToken() async {
+    if (!_supabaseConfigured) return null;
+    return Supabase.instance.client.auth.currentSession?.accessToken;
   }
 
   @override
   Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Church App',
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      home: _supabaseConfigured
+          ? AuthGate(apiClient: _apiClient, authService: _authService)
+          : const _SupabaseNotConfiguredScreen(),
+    );
+  }
+}
+
+/// Shown instead of crashing when SUPABASE_URL/SUPABASE_ANON_KEY haven't
+/// been passed via --dart-define yet — see README.md for the run command.
+class _SupabaseNotConfiguredScreen extends StatelessWidget {
+  const _SupabaseNotConfiguredScreen();
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Church App — Phase 0')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
+            children: const [
+              Icon(Icons.settings_outlined, size: 48),
+              SizedBox(height: 16),
               Text(
-                'Environment: ${widget.config.environment.name}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Text(_status, textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _checkBackend,
-                child: const Text('Check backend health'),
+                'Supabase isn\'t configured for this build.\n\n'
+                'Run with --dart-define=SUPABASE_URL=... and '
+                '--dart-define=SUPABASE_ANON_KEY=... (see README.md).',
+                textAlign: TextAlign.center,
               ),
             ],
           ),

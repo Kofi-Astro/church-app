@@ -1,5 +1,5 @@
-// Smoke test for the Phase 0 shell. Replaces the default counter-app test
-// that shipped with `flutter create` — that widget no longer exists.
+// Smoke test for the app shell's "Supabase not configured" fallback —
+// the only path testable without a live Supabase project or network.
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,8 +7,9 @@ import 'package:mobile/core/config/env_config.dart';
 import 'package:mobile/main.dart';
 
 void main() {
-  testWidgets('App boots and shows the Phase 0 home shell',
-      (WidgetTester tester) async {
+  testWidgets('Shows a setup message when Supabase env vars are missing', (
+    WidgetTester tester,
+  ) async {
     const config = EnvConfig(
       environment: AppEnvironment.dev,
       apiBaseUrl: 'http://localhost:8000',
@@ -18,7 +19,6 @@ void main() {
 
     await tester.pumpWidget(ChurchApp(config: config));
 
-    expect(find.text('Church App — Phase 0'), findsOneWidget);
-    expect(find.text('Check backend health'), findsOneWidget);
+    expect(find.textContaining('Supabase isn\'t configured'), findsOneWidget);
   });
 }

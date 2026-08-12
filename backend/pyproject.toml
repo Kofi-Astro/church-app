@@ -6,5 +6,11 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B"]
 ignore = []
 
+# FastAPI's dependency-injection system is built around calling Depends()/
+# Query()/Header() as argument defaults — that's the intended pattern, not
+# the mutable-default-argument bug B008 otherwise correctly guards against.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]

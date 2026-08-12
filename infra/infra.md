@@ -32,6 +32,7 @@ when that project is created.
 Run migrations in order:
 ```
 0001_init.sql
+0002_attendance.sql
 ```
 
 ## 3. Row-Level Security (RLS)
