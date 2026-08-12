@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local run config (Supabase URL/anon key) — see dart_define.dev.json.example.
+dart_define.*.json
+!dart_define.*.json.example

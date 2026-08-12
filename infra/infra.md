@@ -6,28 +6,35 @@ separation, and how migrations are applied. Deployment/CI details live in
 
 ## 1. Supabase projects
 
-Create **two** Supabase projects to keep dev and prod fully separate from
-day one (a third, `staging`, can be added later if needed — dev doubles as
-staging for now while working solo):
+Two Supabase projects keep dev and prod fully separate (a third, `staging`,
+can be added later if needed — dev doubles as staging for now while
+working solo):
 
-| Project | Purpose |
-|---|---|
-| `church-app-dev` | Local development and CI. Safe to reset/seed freely. |
-| `church-app-prod` | Real data, once Phase 1 is approved for go-live. Nothing touches this until then. |
+| Project | Purpose | Status |
+|---|---|---|
+| `church-app-dev` | Local development and CI. Safe to reset/seed freely. | **Live** — all 5 migrations applied, RLS confirmed on for all 19 tables. |
+| `church-app-prod` | Real data, once Phase 1 is approved for go-live. Nothing touches this until then. | Not created yet. |
 
 For each project, grab from **Project Settings → API**:
 - Project URL → `SUPABASE_URL`
-- `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (backend only — this key
-  bypasses RLS, so it must never reach the mobile app or client-side code)
-- `anon` key → `SUPABASE_ANON_KEY` (safe for the mobile app; RLS still
-  applies to it)
+- Secret key (`service_role` in the older key format) →
+  `SUPABASE_SERVICE_ROLE_KEY` (backend only — this key bypasses RLS, so it
+  must never reach the mobile app or client-side code)
+- Publishable key (`anon` in the older key format) → `SUPABASE_ANON_KEY`
+  (safe for the mobile app; RLS still applies to it)
+
+Note: Supabase's newer key format (`sb_publishable_...` /
+`sb_secret_...`) requires `supabase-py` ≥ 2.31.0 — older versions raise
+`SupabaseException: Invalid API key` at client creation. `requirements.txt`
+is already pinned to 2.31.0 for this reason.
 
 ## 2. Applying migrations
 
 SQL migrations live in `infra/migrations/`, numbered in order. Apply them
-via the Supabase SQL editor (or the Supabase CLI once that's set up) against
-`church-app-dev` first, verify, then apply the same file to `church-app-prod`
-when that project is created.
+via the Supabase SQL editor, the Supabase CLI, or `psql` directly against
+the project's connection string (Project Settings → Database). All 5 are
+already applied to `church-app-dev`; apply the same files to
+`church-app-prod` in the same order when that project is created.
 
 Run migrations in order:
 ```
@@ -36,7 +43,18 @@ Run migrations in order:
 0003_content.sql
 0004_reading_plans_and_groups.sql
 0005_community.sql
+0006_fix_profiles_rls.sql
 ```
+
+Two of the migrations emit a harmless `NOTICE` about a policy name being
+truncated to Postgres's 63-character identifier limit — the policy still
+gets created correctly under the truncated name, this is cosmetic only.
+
+`0006` is not optional — without it, every read of `profiles` (and
+therefore every other table whose policies check a caller's role) fails
+with `infinite recursion detected in policy for relation "profiles"`
+under RLS. See the comment at the top of that file and
+`docs/threat-model.md` for how this was found and confirmed fixed.
 
 ## 3. Row-Level Security (RLS)
 

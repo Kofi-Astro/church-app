@@ -4,11 +4,13 @@ A mobile app for church administration (directory, attendance, giving) and
 congregation life (Scripture, sermons, reading plans, prayer). See the
 project proposal and development roadmap for full context.
 
-**Current status: Phases 0–4 built** (directory, attendance, admin
-dashboard, Bible reader, sermons, reading plans, small groups, prayer
-requests, events). **Not yet connected to a real Supabase project** — see
-"Before this actually runs" below. Giving/payments (Paystack) is
-intentionally built last, in Phase 5 — see the roadmap for why.
+**Current status: Phases 0–4 built and connected to a real Supabase
+project** (`church-app-dev`) — directory, attendance, admin dashboard,
+Bible reader, sermons, reading plans, small groups, prayer requests,
+events all run against live Postgres/Auth now, not just fakes. See
+"Before this actually runs" below for what's still needed to click
+through it as a real user. Giving/payments (Paystack) is intentionally
+built last, in Phase 5 — see the roadmap for why.
 
 ## Structure
 
@@ -46,16 +48,14 @@ pytest -q
 ```bash
 cd mobile
 flutter pub get
-flutter run \
-  --dart-define=ENV=dev \
-  --dart-define=API_BASE_URL=http://localhost:8000 \
-  --dart-define=SUPABASE_URL=https://<project>.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=<anon-key>
+cp dart_define.dev.json.example dart_define.dev.json   # then fill in Supabase values
+flutter run --dart-define-from-file=dart_define.dev.json
 ```
 
-Without the two `SUPABASE_*` values the app boots to a "Supabase isn't
-configured" screen instead of the login flow — expected until a Supabase
-project exists (see below).
+`dart_define.dev.json` is gitignored, same pattern as `backend/.env` —
+never commit real values into the `.example` file. Without
+`SUPABASE_URL`/`SUPABASE_ANON_KEY` filled in, the app boots to a
+"Supabase isn't configured" screen instead of the login flow.
 
 Run analysis + tests:
 ```bash
@@ -71,16 +71,18 @@ Two GitHub Actions workflows run automatically on PRs/pushes touching
 
 ## Before this actually runs end-to-end
 
-The backend and mobile app both boot and pass their test suites today
-without any external accounts — but nothing that touches real data works
-yet, because no Supabase project exists. Before that:
+`church-app-dev` exists and all 5 migrations are applied — `backend/.env`
+and `mobile/dart_define.dev.json` are already wired to it (both
+gitignored, so a fresh clone needs its own copy of each; see the
+`.example` files). One real login exists
+(`opokukelvin29@gmail.com`, role `admin`) so `AuthGate` has a profile to
+resolve after sign-in. `church-app-prod` doesn't exist yet — create it
+per `infra/infra.md` when this is ready to go live with real church data
+(see "Before real member data goes in" below first).
 
-1. Create `church-app-dev` (and later `church-app-prod`) per
-   `infra/infra.md`, and apply `infra/migrations/*.sql` in order.
-2. Fill in `backend/.env` and the mobile `SUPABASE_*` dart-defines with
-   that project's values.
-3. Create at least one real login and a matching `profiles` row (with a
-   role) so `AuthGate` has something to resolve after sign-in.
+Everything is still on sample/test data — no real directory, attendance,
+or content has been entered. The `profiles`/`members`/etc. tables in
+`church-app-dev` are otherwise empty.
 
 One thing that's fully live regardless: the Bible reader, since it calls
 the free public bible-api.com directly (see

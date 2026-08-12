@@ -1,6 +1,6 @@
 # Threat Model (living document — revisit every phase)
 
-Last updated: Phase 4.
+Last updated: Phase 4, plus first live-Supabase RLS verification.
 
 ## What data is sensitive here
 
@@ -55,26 +55,60 @@ Last updated: Phase 4.
 
 Everything below marked done is verified at the **API layer**
 (`backend/tests/`, using role/account overrides against the real FastAPI
-routes) — none of it has been re-verified against **live Postgres RLS**
-yet, because no Supabase project exists. That's a real gap, not a
-formality: RLS is the actual enforcement layer for anything the mobile
-app reaches directly (Bible bookmarks/highlights, reading-plan progress),
-and defense-in-depth for everything routed through the backend. Once
-`infra/infra.md`'s setup is done, re-run the equivalent negative tests
-by hand against the live project before any real member data goes in.
+routes). That layer only ever exercises the `service_role` key, which
+bypasses RLS by design — so passing those tests never actually proved RLS
+itself worked.
 
-- [x] Phase 1: attendance/directory role checks negative-tested
-      (`test_households.py`, `test_members.py`, `test_attendance.py`)
+`church-app-dev` now exists, and RLS has been probed for the first time
+against the live project, directly via PostgREST with a real low-privilege
+account's JWT (the same path the mobile app's direct-Supabase features —
+Bible bookmarks/highlights, reading-plan progress — actually use). That
+probe immediately found two real bugs, both fixed in
+`infra/migrations/0006_fix_profiles_rls.sql`:
+
+1. **Every read of `profiles` crashed with infinite recursion**
+   (`42P17`) — the "admins can read all profiles" policy decided access
+   by running a SELECT on `profiles`, which had to re-evaluate that same
+   policy. Since most other tables' policies check the caller's role via
+   a subquery on `profiles`, this broke RLS on `households`, `members`,
+   `attendance`, `sermons`, `reading_plans`, `small_groups`,
+   `prayer_requests`, `events`, and more — effectively everything. Fixed
+   by moving the role lookup into a `SECURITY DEFINER` function, which
+   reads the row as the table owner and doesn't re-trigger RLS.
+2. **Privilege escalation** — "users can update their own non-role
+   fields" only checked `auth.uid() = id`; nothing stopped a signed-in
+   member from PATCHing their own `role` to `admin` directly via the
+   anon key, skipping the backend entirely. Fixed with a trigger that
+   blocks any role change unless the caller is already an admin or is
+   the backend acting via `service_role`.
+
+Both fixes were re-verified live (not just re-read) with a disposable
+low-privilege test account: a member can now only see their own profile
+row and gets an empty result on `households`; a member's direct attempt
+to self-promote is rejected by the trigger; an admin still sees every
+profile; the backend's `service_role` path can still change a profile's
+role. The test account was deleted afterward.
+
+- [x] Phase 1: attendance/directory role checks negative-tested at the
+      API layer (`test_households.py`, `test_members.py`,
+      `test_attendance.py`); RLS-level checks above cover the same
+      tables live
 - [ ] Phase 2: sermon library only supports admin-pasted video links, not
       file upload — there's no storage bucket yet, so this item doesn't
       apply until one exists
 - [x] Phase 3: group materials/roster scoped to group membership,
       negative-tested (`test_small_groups.py` — a member of group A gets
-      403 on group B's materials, same for a non-member)
+      403 on group B's materials, same for a non-member); not yet
+      re-verified against live RLS the way `profiles`/`households` were
+      above — same method, just not done yet
 - [x] Phase 4: prayer-request visibility adversarially tested
       (`test_prayer_requests.py` — a stranger, and separately an admin,
-      both get 404 on someone else's private request)
+      both get 404 on someone else's private request); not yet
+      re-verified against live RLS
 - [ ] Phase 5: Paystack webhook signature verification in place; payment
       logs audited for accidental card/account data
-- [ ] All phases: re-verify the above against live Supabase RLS once
-      `church-app-dev` exists, not just the API-layer tests above
+- [ ] Extend the live-RLS probe done for `profiles`/`households` above to
+      the rest of Phase 2–4's tables (attendance, sermons, reading
+      plans, small groups, prayer requests, events) before real member
+      data goes in — the `profiles` recursion bug is proof this class of
+      issue doesn't show up any other way
