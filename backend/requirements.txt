@@ -1,7 +1,7 @@
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.13.4
-pydantic-settings==2.7.1
+pydantic-settings==2.15.0
 email-validator==2.2.0
 python-dotenv==1.2.2
 # 2.31.0+ required: older versions reject Supabase's newer sb_publishable_/
