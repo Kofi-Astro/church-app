@@ -105,8 +105,15 @@ role. The test account was deleted afterward.
       (`test_prayer_requests.py` — a stranger, and separately an admin,
       both get 404 on someone else's private request); not yet
       re-verified against live RLS
-- [ ] Phase 5: Paystack webhook signature verification in place; payment
-      logs audited for accidental card/account data
+- [ ] Phase 5: schema (`giving_transactions`) and endpoints
+      (`/api/v1/giving/*`) are built and live on `church-app-dev`, gated
+      the same way Supabase itself was gated pre-connection — a clean
+      503 until `PAYSTACK_SECRET_KEY` is set, never a fake success (see
+      `backend/tests/test_giving.py`). Still open: an actual Paystack
+      account/key, webhook signature verification (nothing currently
+      confirms a payment really completed — the app can't yet trust its
+      own "success" state), and a payment-logs audit for accidental
+      card/account data once that exists
 - [ ] Extend the live-RLS probe done for `profiles`/`households` above to
       the rest of Phase 2–4's tables (attendance, sermons, reading
       plans, small groups, prayer requests, events) before real member

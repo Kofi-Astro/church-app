@@ -39,7 +39,7 @@ async def get_current_profile(authorization: str | None = Header(default=None)) 
     if not result.data:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "No profile exists for this account")
 
-    return Profile(**result.data)
+    return Profile(**result.data, email=user.email)
 
 
 def require_role(*allowed_roles: str):

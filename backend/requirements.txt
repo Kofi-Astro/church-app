@@ -7,8 +7,10 @@ python-dotenv==1.2.2
 # 2.31.0+ required: older versions reject Supabase's newer sb_publishable_/
 # sb_secret_ API key format and raise "Invalid API key" at client creation.
 supabase==2.31.0
+# Used at runtime by app/core/paystack.py (Phase 5), and by the test suite's
+# TestClient below.
+httpx==0.28.1
 
 # Dev / test / lint
 pytest==9.0.3
-httpx==0.28.1
 ruff==0.8.6

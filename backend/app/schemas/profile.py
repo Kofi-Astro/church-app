@@ -2,6 +2,11 @@
 Profile/role schema — mirrors the `app_role` enum and `profiles` table
 defined in infra/migrations/0001_init.sql. Kept in sync manually since
 Supabase is the source of truth for the schema itself.
+
+`email` is the one exception: it isn't a `profiles` column (Supabase Auth
+already owns it on `auth.users`) — get_current_profile fills it in from
+the authenticated user response. It exists on this model because Phase 5
+giving needs an email to hand to Paystack's transaction-initialize call.
 """
 from enum import Enum
 
@@ -19,3 +24,4 @@ class Profile(BaseModel):
     id: str
     full_name: str
     role: Role
+    email: str

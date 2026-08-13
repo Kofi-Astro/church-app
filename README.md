@@ -9,8 +9,15 @@ project** (`church-app-dev`) — directory, attendance, admin dashboard,
 Bible reader, sermons, reading plans, small groups, prayer requests,
 events all run against live Postgres/Auth now, not just fakes. See
 "Before this actually runs" below for what's still needed to click
-through it as a real user. Giving/payments (Paystack) is intentionally
-built last, in Phase 5 — see the roadmap for why.
+through it as a real user.
+
+**Phase 5 (giving) is also built** — real schema, real `/api/v1/giving`
+endpoints, a real Give screen in the app — but not connected to an
+actual Paystack account yet. `PAYSTACK_SECRET_KEY` is blank, so
+initiating a gift returns a clean "not connected yet" response instead
+of a fake success. This is deliberate: the goal was to see the exact
+form/flow before wiring up real money, not to fake a payment. See
+`backend/app/core/paystack.py`.
 
 ## Structure
 
@@ -56,6 +63,13 @@ flutter run --dart-define-from-file=dart_define.dev.json
 never commit real values into the `.example` file. Without
 `SUPABASE_URL`/`SUPABASE_ANON_KEY` filled in, the app boots to a
 "Supabase isn't configured" screen instead of the login flow.
+
+`API_BASE_URL` is platform-dependent when the backend runs on your own
+machine: the Android emulator can't resolve `localhost` as the host
+machine, so it needs `http://10.0.2.2:8000` (the emulator's special
+alias for host loopback) — that's the default in
+`dart_define.dev.json.example`. iOS simulator and physical devices need
+`http://localhost:8000` or your machine's LAN IP, respectively.
 
 Run analysis + tests:
 ```bash

@@ -6,6 +6,7 @@ from app.main import app
 from app.repositories.attendance import get_attendance_repository
 from app.repositories.church_settings import get_church_settings_repository
 from app.repositories.events import get_event_repository
+from app.repositories.giving import get_giving_repository
 from app.repositories.households import get_household_repository
 from app.repositories.members import get_member_repository
 from app.repositories.prayer_requests import get_prayer_request_repository
@@ -17,6 +18,7 @@ from tests.fakes import (
     FakeAttendanceRepository,
     FakeChurchSettingsRepository,
     FakeEventRepository,
+    FakeGivingRepository,
     FakeHouseholdRepository,
     FakeMemberRepository,
     FakePrayerRequestRepository,
@@ -77,6 +79,11 @@ def fake_events():
 
 
 @pytest.fixture
+def fake_giving():
+    return FakeGivingRepository()
+
+
+@pytest.fixture
 def client(
     fake_households,
     fake_members,
@@ -87,6 +94,7 @@ def client(
     fake_small_groups,
     fake_prayer_requests,
     fake_events,
+    fake_giving,
 ):
     app.dependency_overrides[get_household_repository] = lambda: fake_households
     app.dependency_overrides[get_member_repository] = lambda: fake_members
@@ -97,6 +105,7 @@ def client(
     app.dependency_overrides[get_small_group_repository] = lambda: fake_small_groups
     app.dependency_overrides[get_prayer_request_repository] = lambda: fake_prayer_requests
     app.dependency_overrides[get_event_repository] = lambda: fake_events
+    app.dependency_overrides[get_giving_repository] = lambda: fake_giving
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -108,7 +117,7 @@ def as_profile(profile_id: str, role: Role):
     e.g. two ordinary members in different small groups."""
 
     async def _override() -> Profile:
-        return Profile(id=profile_id, full_name="Test User", role=role)
+        return Profile(id=profile_id, full_name="Test User", role=role, email="test@example.com")
 
     return _override
 

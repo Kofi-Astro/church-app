@@ -10,6 +10,8 @@ import '../bible/bible_sync_service.dart';
 import '../bible/screens/bible_reader_screen.dart';
 import '../directory/directory_service.dart';
 import '../events/event_service.dart';
+import '../giving/giving_service.dart';
+import '../giving/screens/giving_screen.dart';
 import '../groups/group_service.dart';
 import '../prayer/prayer_service.dart';
 import '../reading_plans/reading_plan_service.dart';
@@ -18,11 +20,9 @@ import 'community_tab.dart';
 import 'grow_tab.dart';
 
 /// The signed-in app shell: bottom-nav tabs gated by role. "Admin" only
-/// shows for roles that can act on it; "Giving" is visible to everyone
-/// but disabled — see roadmap Phase 1 Week 5 ("visually-present but
-/// disabled Giving tab" — demoes the full information architecture
-/// without wiring real payments, which is deliberately deferred to
-/// Phase 5).
+/// shows for roles that can act on it. "Giving" is the real form/flow
+/// (see GivingScreen) — the only thing not real yet is Paystack itself,
+/// which the backend reports via a clean 503 until it's connected.
 class AppShell extends StatefulWidget {
   final ApiClient apiClient;
   final AuthService authService;
@@ -48,6 +48,7 @@ class _AppShellState extends State<AppShell> {
   late final GroupService _groupService;
   late final PrayerService _prayerService;
   late final EventService _eventService;
+  late final GivingService _givingService;
   late final BibleApiService _bibleApiService;
   late final BibleCache _bibleCache;
   late final BibleSyncService _bibleSyncService;
@@ -62,6 +63,7 @@ class _AppShellState extends State<AppShell> {
     _groupService = GroupService(widget.apiClient);
     _prayerService = PrayerService(widget.apiClient);
     _eventService = EventService(widget.apiClient);
+    _givingService = GivingService(widget.apiClient);
     _bibleApiService = BibleApiService();
     _bibleCache = BibleCache();
     _bibleSyncService = BibleSyncService();
@@ -126,7 +128,7 @@ class _AppShellState extends State<AppShell> {
       _Tab(
         label: 'Giving',
         icon: Icons.volunteer_activism_outlined,
-        builder: (context) => const _GivingComingSoonTab(),
+        builder: (context) => GivingScreen(givingService: _givingService),
       ),
     ];
 
@@ -199,33 +201,6 @@ class _HomeTabState extends State<_HomeTab> {
             Text(_status, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(onPressed: _checkBackend, child: const Text('Check backend health')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GivingComingSoonTab extends StatelessWidget {
-  const _GivingComingSoonTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.lock_clock_outlined, size: 48, color: Theme.of(context).colorScheme.outline),
-            const SizedBox(height: 16),
-            Text('Giving is coming soon', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            const Text(
-              'Online giving launches once the church\'s Paystack account is '
-              'verified (Phase 5). Everything else in the app is ready today.',
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       ),

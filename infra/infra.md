@@ -44,6 +44,7 @@ Run migrations in order:
 0004_reading_plans_and_groups.sql
 0005_community.sql
 0006_fix_profiles_rls.sql
+0007_giving.sql
 ```
 
 Two of the migrations emit a harmless `NOTICE` about a policy name being
@@ -71,9 +72,20 @@ No credentials live in this repo. Locally, copy `.env.example` to
 encrypted secrets. In production, they're set as environment variables on
 the hosting platform (Render/Railway/Fly.io).
 
-## 5. Giving/transactions tables (Phase 5, not yet active)
+## 5. Giving (Phase 5 — schema live, Paystack not connected)
 
-`0001_init.sql` intentionally does **not** create `giving`/`transactions`
-tables yet — that schema lands with Phase 5 alongside the Paystack
-integration, so it can be designed once against real Paystack response
-shapes instead of guessed at now.
+`0007_giving.sql` creates `giving_transactions` and is applied to
+`church-app-dev`. The backend's `/api/v1/giving/initialize` endpoint
+calls Paystack's "Initialize Transaction" API (`app/core/paystack.py`)
+using `PAYSTACK_SECRET_KEY` — until that's set, it returns a clean 503
+instead of attempting a real charge. To actually connect it:
+
+1. Get a Paystack **test** secret key (`sk_test_...`) from the church's
+   Paystack dashboard.
+2. Set `PAYSTACK_SECRET_KEY` in `backend/.env`.
+3. Test end-to-end with Paystack's documented test card numbers before
+   ever touching a live key.
+
+Webhook signature verification (to confirm a payment actually completed,
+rather than trusting the mobile app's word for it) isn't built yet —
+that's the next piece once a real key exists to test against.

@@ -15,6 +15,11 @@ the mobile app, same pattern as the Phase 2 Bible bookmarks.
 Phase 4 adds prayer requests (public/leaders/private visibility — the
 highest-stakes table in the app, see app/repositories/prayer_requests.py)
 and events with RSVP.
+Phase 5 adds giving: /giving/initialize starts a Paystack transaction and
+/giving/history and /giving/transactions read it back. The schema and
+endpoints are real, but PAYSTACK_SECRET_KEY isn't set anywhere yet, so
+initialize returns a clean 503 until the church's Paystack account is
+connected — see app/core/paystack.py.
 """
 import logging
 from contextlib import asynccontextmanager
@@ -24,6 +29,7 @@ from fastapi import FastAPI  # type: ignore[import]
 from app.api.v1.attendance import router as attendance_router
 from app.api.v1.church_settings import router as church_settings_router
 from app.api.v1.events import router as events_router
+from app.api.v1.giving import router as giving_router
 from app.api.v1.households import router as households_router
 from app.api.v1.members import router as members_router
 from app.api.v1.prayer_requests import router as prayer_requests_router
@@ -65,6 +71,7 @@ app.include_router(reading_plans_router, prefix="/api/v1")
 app.include_router(small_groups_router, prefix="/api/v1")
 app.include_router(prayer_requests_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
+app.include_router(giving_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["system"])

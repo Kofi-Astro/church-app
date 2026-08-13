@@ -330,3 +330,28 @@ class FakeEventRepository:
 
     def remove_rsvp(self, event_id: str, profile_id: str) -> None:
         self._rsvps.pop((event_id, profile_id), None)
+
+
+class FakeGivingRepository:
+    def __init__(self):
+        self._rows: dict[str, dict] = {}
+
+    def create_pending(self, data: dict):
+        row = {
+            **data,
+            "status": "pending",
+            "id": _new_id(),
+            "created_at": _now(),
+            "updated_at": _now(),
+        }
+        self._rows[row["id"]] = row
+        return row
+
+    def list_for_profile(self, profile_id: str, *, limit: int, offset: int):
+        items = [r for r in self._rows.values() if r["profile_id"] == profile_id]
+        items = sorted(items, key=lambda r: r["created_at"], reverse=True)
+        return items[offset : offset + limit], len(items)
+
+    def list_all(self, *, limit: int, offset: int):
+        items = sorted(self._rows.values(), key=lambda r: r["created_at"], reverse=True)
+        return items[offset : offset + limit], len(items)
