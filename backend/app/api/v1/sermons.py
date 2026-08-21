@@ -1,3 +1,4 @@
+"""Routes for the sermon library (CRUD, with filtering/search)."""
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.deps import get_current_profile, require_role
@@ -13,6 +14,7 @@ router = APIRouter(prefix="/sermons", tags=["sermons"])
 require_write = require_role("admin")
 
 
+# Paginated, filterable list of sermons (by series/speaker/title search). Any logged-in user.
 @router.get("", response_model=Page[SermonRead])
 async def list_sermons(
     limit: int = Query(default=25, ge=1, le=100),
@@ -29,6 +31,7 @@ async def list_sermons(
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
+# Fetches one sermon by id. 404 if it doesn't exist. Any logged-in user.
 @router.get("/{sermon_id}", response_model=SermonRead)
 async def get_sermon(
     sermon_id: str,
@@ -41,6 +44,7 @@ async def get_sermon(
     return sermon
 
 
+# Adds a new sermon to the library. admin only.
 @router.post("", response_model=SermonRead, status_code=status.HTTP_201_CREATED)
 async def create_sermon(
     payload: SermonCreate,
@@ -53,6 +57,8 @@ async def create_sermon(
     return repo.create(data)
 
 
+# Partially updates a sermon (only fields sent are changed). 404 if it doesn't
+# exist. admin only.
 @router.patch("/{sermon_id}", response_model=SermonRead)
 async def update_sermon(
     sermon_id: str,
@@ -69,6 +75,7 @@ async def update_sermon(
     return updated
 
 
+# Deletes a sermon. 404 if it doesn't exist. admin only.
 @router.delete("/{sermon_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sermon(
     sermon_id: str,

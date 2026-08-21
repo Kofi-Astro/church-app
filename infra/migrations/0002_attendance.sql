@@ -44,6 +44,10 @@ create policy "services: admins and group leaders can manage"
 -- ---------------------------------------------------------------------
 -- Attendance
 -- ---------------------------------------------------------------------
+-- member_id is who was present; checked_in_by is who marked them present
+-- (an admin/group_leader doing check-in at the door) — two different
+-- people in the normal case. The unique constraint stops the same member
+-- being checked in twice for the same service.
 create table attendance (
   id uuid primary key default gen_random_uuid(),
   service_id uuid not null references services (id) on delete cascade,

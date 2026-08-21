@@ -1,3 +1,9 @@
+"""
+Routes for prayer requests: submitting them, browsing the ones visible to you,
+and marking that you're praying for one. See
+app/repositories/prayer_requests.py for the visibility rule this router
+enforces via can_view_prayer_request.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import get_current_profile
@@ -12,6 +18,8 @@ from app.schemas.profile import Profile
 router = APIRouter(prefix="/prayer-requests", tags=["prayer-requests"])
 
 
+# Shared helper: turns a raw prayer request row into the PrayerRequestRead shape,
+# filling in the praying-count and whether *this* caller is praying for it.
 def _to_read_model(
     request: dict, profile: Profile, repo: PrayerRequestRepository
 ) -> PrayerRequestRead:
@@ -22,6 +30,8 @@ def _to_read_model(
     )
 
 
+# Lists every prayer request visible to the caller (public ones, "leaders"-only
+# ones if the caller is a leader/admin, and the caller's own private ones).
 @router.get("", response_model=list[PrayerRequestRead])
 async def list_prayer_requests(
     repo: PrayerRequestRepository = Depends(get_prayer_request_repository),
@@ -46,6 +56,7 @@ async def get_prayer_request(
     return _to_read_model(request, profile, repo)
 
 
+# Submits a new prayer request, authored by the caller. Any logged-in user.
 @router.post("", response_model=PrayerRequestRead, status_code=status.HTTP_201_CREATED)
 async def create_prayer_request(
     payload: PrayerRequestCreate,
@@ -58,6 +69,8 @@ async def create_prayer_request(
     return _to_read_model(request, profile, repo)
 
 
+# Deletes a prayer request. Only the original author may delete their own request
+# (a leader/admin who can merely *view* a "leaders" request still can't delete it).
 @router.delete("/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_prayer_request(
     request_id: str,
@@ -72,6 +85,7 @@ async def delete_prayer_request(
     repo.delete(request_id)
 
 
+# Marks the caller as "praying" for this request (idempotent). 404 if not visible.
 @router.post("/{request_id}/pray", response_model=PrayerRequestRead)
 async def pray_for_request(
     request_id: str,
@@ -85,6 +99,7 @@ async def pray_for_request(
     return _to_read_model(request, profile, repo)
 
 
+# Un-marks the caller as "praying" for this request. 404 if not visible.
 @router.delete("/{request_id}/pray", response_model=PrayerRequestRead)
 async def unpray_for_request(
     request_id: str,

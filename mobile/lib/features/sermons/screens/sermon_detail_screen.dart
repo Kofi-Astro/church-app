@@ -4,11 +4,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models.dart';
 
+/// Read-only detail view for a single sermon: title, speaker/series/date,
+/// an optional "Watch" button (opens the video externally), and
+/// description.
 class SermonDetailScreen extends StatelessWidget {
   final Sermon sermon;
 
   const SermonDetailScreen({super.key, required this.sermon});
 
+  /// Opens the sermon's video URL in an external app/browser (does
+  /// nothing if there's no video attached).
   Future<void> _watch() async {
     final url = sermon.videoUrl;
     if (url == null || url.isEmpty) return;

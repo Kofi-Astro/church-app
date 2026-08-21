@@ -38,6 +38,11 @@ create index sermons_sermon_date_idx on sermons (sermon_date desc);
 -- Church settings — a single row of church-wide, admin-editable config.
 -- Starts with just the livestream URL (Phase 2's "live streaming embed").
 -- ---------------------------------------------------------------------
+-- `id boolean primary key ... check (id)` is a standard Postgres trick to
+-- force exactly one row to ever exist: the only legal primary key value
+-- is `true`, so a second insert would collide with the existing row's
+-- primary key. That's how "one settings row for the whole church" is
+-- enforced at the database level instead of just by convention.
 create table church_settings (
   id boolean primary key default true,
   livestream_url text,

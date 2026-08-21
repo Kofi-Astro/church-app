@@ -13,10 +13,13 @@ TABLE = "households"
 
 
 class HouseholdRepository:
+    """Supabase-backed storage for households."""
+
     def __init__(self, client: Client):
         self._client = client
 
     def list(self, *, limit: int, offset: int) -> tuple[list[dict], int]:
+        """Paginated list of households, alphabetical by name. Returns (rows, total_count)."""
         response = (
             self._client.table(TABLE)
             .select("*", count="exact")
@@ -27,23 +30,28 @@ class HouseholdRepository:
         return response.data or [], response.count or 0
 
     def get(self, household_id: str) -> dict | None:
+        """Fetches one household by id, or None if it doesn't exist."""
         response = (
             self._client.table(TABLE).select("*").eq("id", household_id).maybe_single().execute()
         )
         return response.data if response else None
 
     def create(self, data: dict) -> dict:
+        """Inserts a new household row and returns it."""
         response = self._client.table(TABLE).insert(data).execute()
         return response.data[0]
 
     def update(self, household_id: str, data: dict) -> dict | None:
+        """Updates a household by id and returns the new row, or None if it didn't exist."""
         response = self._client.table(TABLE).update(data).eq("id", household_id).execute()
         return response.data[0] if response.data else None
 
     def delete(self, household_id: str) -> bool:
+        """Deletes a household by id. Returns True if a row was actually deleted."""
         response = self._client.table(TABLE).delete().eq("id", household_id).execute()
         return bool(response.data)
 
 
 def get_household_repository(client: Client = Depends(get_supabase)) -> HouseholdRepository:
+    """FastAPI dependency that builds a HouseholdRepository from the shared Supabase client."""
     return HouseholdRepository(client)

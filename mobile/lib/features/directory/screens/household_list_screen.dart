@@ -5,8 +5,13 @@ import '../directory_service.dart';
 import '../models.dart';
 import 'household_detail_screen.dart';
 
+/// Paginated, infinite-scrolling list of all households, with a way for
+/// admins to add new ones. Tapping a household opens
+/// [HouseholdDetailScreen] to see its members.
 class HouseholdListScreen extends StatefulWidget {
   final DirectoryService directoryService;
+  /// Current user's profile — used to decide whether the "add household"
+  /// button is shown (admin-only). Null if not signed in.
   final AppProfile? profile;
 
   const HouseholdListScreen({super.key, required this.directoryService, required this.profile});
@@ -15,10 +20,17 @@ class HouseholdListScreen extends StatefulWidget {
   State<HouseholdListScreen> createState() => _HouseholdListScreenState();
 }
 
+/// Manages the loaded household list, pagination state, and the "add
+/// household" dialog flow.
 class _HouseholdListScreenState extends State<HouseholdListScreen> {
+  // Households loaded so far, accumulated across pages as the user scrolls.
   final List<Household> _households = [];
+  // True while a page fetch is in flight (prevents duplicate/overlapping
+  // fetches from scroll + retry firing at once).
   bool _loading = false;
+  // Whether there are more pages left to fetch from the server.
   bool _hasMore = true;
+  // Last error message, shown in place of the list when present.
   String? _error;
 
   @override
@@ -27,6 +39,9 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
     _loadMore();
   }
 
+  /// Fetches the next page of households (starting after what's already
+  /// loaded) and appends it to [_households]. No-ops if already loading or
+  /// there's nothing more to fetch.
   Future<void> _loadMore() async {
     if (_loading || !_hasMore) return;
     setState(() {
@@ -46,6 +61,8 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
     }
   }
 
+  /// Clears the loaded list and re-fetches from the start — used for
+  /// pull-to-refresh and after creating a new household.
   Future<void> _refresh() async {
     setState(() {
       _households.clear();
@@ -54,6 +71,8 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
     await _loadMore();
   }
 
+  /// Shows a dialog to collect a new household's name/address, then
+  /// creates it via the API and refreshes the list on success.
   Future<void> _showAddHouseholdDialog() async {
     final nameController = TextEditingController();
     final addressController = TextEditingController();
@@ -106,11 +125,13 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Households')),
+      // Add button, admins only.
       floatingActionButton: canManage
           ? FloatingActionButton(onPressed: _showAddHouseholdDialog, child: const Icon(Icons.add))
           : null,
       body: RefreshIndicator(
         onRefresh: _refresh,
+        // Empty/error state vs. the actual list.
         child: _households.isEmpty && !_loading
             ? ListView(
                 children: [
@@ -124,9 +145,12 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                 ],
               )
             : ListView.builder(
+                // +1 slot at the end for the "load more" spinner/sentinel.
                 itemCount: _households.length + 1,
                 itemBuilder: (context, index) {
                   if (index == _households.length) {
+                    // Reaching the last slot triggers loading the next
+                    // page (classic scroll-to-load-more pattern).
                     if (_hasMore) {
                       _loadMore();
                       return const Padding(

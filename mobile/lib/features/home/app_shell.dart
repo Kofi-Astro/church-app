@@ -39,7 +39,11 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
+// Owns every per-feature service (one instance each, created once and
+// reused across tab switches) and which bottom-nav tab is selected.
 class _AppShellState extends State<AppShell> {
+  // Index into the `tabs` list built in build() below — which bottom-nav
+  // destination is currently showing.
   int _selectedIndex = 0;
   late final DirectoryService _directoryService;
   late final AttendanceService _attendanceService;
@@ -77,8 +81,13 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Admin tab is only added to the list below when the signed-in
+    // profile's role allows it (see AppProfile.canAccessAdmin).
     final showAdminTab = widget.profile.canAccessAdmin;
 
+    // The list of bottom-nav tabs and what each one builds. Built fresh
+    // every call to build() so it always reflects the latest services/
+    // profile, but the services themselves (above) are long-lived.
     final tabs = <_Tab>[
       _Tab(
         label: 'Home',
@@ -156,6 +165,8 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
+/// Describes one bottom-nav destination: its label, icon, and the widget
+/// builder used to build its body when selected.
 class _Tab {
   final String label;
   final IconData icon;
@@ -164,6 +175,8 @@ class _Tab {
   const _Tab({required this.label, required this.icon, required this.builder});
 }
 
+/// The "Home" tab's content: a welcome message plus a manual backend
+/// health-check button. Mostly a developer/debug convenience.
 class _HomeTab extends StatefulWidget {
   final ApiClient apiClient;
   final AppProfile profile;
@@ -174,9 +187,12 @@ class _HomeTab extends StatefulWidget {
   State<_HomeTab> createState() => _HomeTabState();
 }
 
+// Tracks the text describing the outcome of the last backend health check.
 class _HomeTabState extends State<_HomeTab> {
   String _status = 'Not checked yet';
 
+  // Calls the backend's health endpoint and shows the result (or error)
+  // as status text.
   Future<void> _checkBackend() async {
     setState(() => _status = 'Checking...');
     try {

@@ -1,9 +1,13 @@
+// Main Prayer Requests screen: feed of requests, "I'm praying" toggle,
+// and posting/deleting requests.
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
 import '../models.dart';
 import '../prayer_service.dart';
 
+/// Lists prayer requests visible to the current user, with a heart button
+/// to toggle "I'm praying for this" and a FAB to post a new request.
 class PrayerFeedScreen extends StatefulWidget {
   final PrayerService prayerService;
   final AppProfile? profile;
@@ -14,6 +18,7 @@ class PrayerFeedScreen extends StatefulWidget {
   State<PrayerFeedScreen> createState() => _PrayerFeedScreenState();
 }
 
+// Holds the fetched prayer request feed plus loading/error state.
 class _PrayerFeedScreenState extends State<PrayerFeedScreen> {
   List<PrayerRequest> _requests = [];
   bool _loading = true;
@@ -25,6 +30,8 @@ class _PrayerFeedScreenState extends State<PrayerFeedScreen> {
     _load();
   }
 
+  // Fetches the prayer request feed; used on first load and
+  // pull-to-refresh.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -40,6 +47,8 @@ class _PrayerFeedScreenState extends State<PrayerFeedScreen> {
     }
   }
 
+  // Toggles the current user's "praying" status on a request (pray if not
+  // already praying, unpray if they are).
   Future<void> _togglePray(PrayerRequest request) async {
     final index = _requests.indexWhere((r) => r.id == request.id);
     try {
@@ -52,6 +61,8 @@ class _PrayerFeedScreenState extends State<PrayerFeedScreen> {
     }
   }
 
+  // Deletes a request (only shown for the current user's own requests —
+  // see the `isMine` check in build()) and reloads the feed.
   Future<void> _deleteRequest(PrayerRequest request) async {
     try {
       await widget.prayerService.deleteRequest(request.id);
@@ -62,6 +73,8 @@ class _PrayerFeedScreenState extends State<PrayerFeedScreen> {
     }
   }
 
+  // Shows a dialog to write a new request and pick its visibility, then
+  // posts it if confirmed with non-empty content.
   Future<void> _showNewRequestDialog() async {
     final contentController = TextEditingController();
     PrayerVisibility visibility = PrayerVisibility.public;
@@ -137,6 +150,9 @@ class _PrayerFeedScreenState extends State<PrayerFeedScreen> {
                           ),
                         ],
                       )
+                    // One card per request: visibility chip + delete
+                    // (own requests only), content text, and the
+                    // pray-toggle heart with a running count.
                     : ListView.builder(
                         itemCount: _requests.length,
                         itemBuilder: (context, index) {

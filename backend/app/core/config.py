@@ -14,6 +14,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """
+    All environment-driven config for the app, in one place. pydantic-settings
+    reads these from real environment variables first, falling back to a local
+    `.env` file — see model_config below. Every field has a safe default so the
+    app can still start (e.g. for CI or /health) even with no .env at all.
+    """
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # General
@@ -35,6 +42,7 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
+        """Convenience flag for "are we running against real church data?"."""
         return self.environment == "prod"
 
 

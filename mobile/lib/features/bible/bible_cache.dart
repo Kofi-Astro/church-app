@@ -10,8 +10,12 @@ import 'models.dart';
 /// without a connection once a passage has been opened once, and gives
 /// "search" something to search across without hitting the network.
 class BibleCache {
+  // Cached database handle, shared across all BibleCache instances/calls
+  // so the SQLite file is only opened once per app run.
   static Database? _db;
 
+  /// Opens (or returns the already-open) local SQLite database, creating
+  /// the `chapters` table on first run.
   Future<Database> _database() async {
     final existing = _db;
     if (existing != null) return existing;
@@ -38,6 +42,8 @@ class BibleCache {
     return db;
   }
 
+  /// Saves (or overwrites, if already cached) a chapter's full text
+  /// locally so it can be read offline and searched later.
   Future<void> save(BibleChapter chapter) async {
     final db = await _database();
     await db.insert(
@@ -56,6 +62,8 @@ class BibleCache {
     );
   }
 
+  /// Looks up a previously-cached chapter, or returns null if it hasn't
+  /// been downloaded yet on this device.
   Future<BibleChapter?> read({
     required String translationId,
     required String bookId,
@@ -97,6 +105,8 @@ class BibleCache {
     return hits;
   }
 
+  // Converts one raw SQLite row (with verses stored as a JSON string) back
+  // into a [BibleChapter].
   BibleChapter _rowToChapter(Map<String, dynamic> row) {
     final versesJson = jsonDecode(row['verses_json'] as String) as List;
     return BibleChapter(
@@ -111,6 +121,9 @@ class BibleCache {
   }
 }
 
+/// One verse-level search match: which chapter it's in and the matching
+/// verse itself, so the search results screen can show context and let
+/// the user jump straight to it.
 class BibleSearchHit {
   final BibleChapter chapter;
   final BibleVerse verse;

@@ -10,6 +10,8 @@ class DirectoryService {
   final ApiClient _client;
   const DirectoryService(this._client);
 
+  /// Fetches a page of households, newest/whatever order the API defaults
+  /// to, [limit] at a time starting at [offset].
   Future<PagedResult<Household>> listHouseholds({int limit = 25, int offset = 0}) async {
     final json = await _client.get(
       '/api/v1/households',
@@ -18,6 +20,7 @@ class DirectoryService {
     return PagedResult.fromJson(json as Map<String, dynamic>, Household.fromJson);
   }
 
+  /// Creates a new household with the given [name] and optional [address].
   Future<Household> createHousehold({required String name, String? address}) async {
     final json = await _client.post(
       '/api/v1/households',
@@ -26,6 +29,9 @@ class DirectoryService {
     return Household.fromJson(json as Map<String, dynamic>);
   }
 
+  /// Fetches a page of members, optionally filtered by a [search] term
+  /// (name/email/phone match, server-side) and/or restricted to one
+  /// [householdId].
   Future<PagedResult<Member>> listMembers({
     int limit = 25,
     int offset = 0,
@@ -44,6 +50,8 @@ class DirectoryService {
     return PagedResult.fromJson(json as Map<String, dynamic>, Member.fromJson);
   }
 
+  /// Creates a new member, optionally attaching them to a household and
+  /// recording contact info.
   Future<Member> createMember({
     required String fullName,
     String? email,

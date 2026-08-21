@@ -20,6 +20,8 @@ class HouseholdDetailScreen extends StatefulWidget {
   State<HouseholdDetailScreen> createState() => _HouseholdDetailScreenState();
 }
 
+/// Holds the async load of this household's member list — [_membersFuture]
+/// is kicked off once in [initState] and rendered with a [FutureBuilder].
 class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
   late Future<PagedResultOrError> _membersFuture;
 
@@ -29,6 +31,9 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     _membersFuture = _loadMembers();
   }
 
+  /// Fetches all members of this household (up to 100 — households are
+  /// small, so no pagination UI is needed), wrapping success/failure in
+  /// [PagedResultOrError] for the FutureBuilder to render.
   Future<PagedResultOrError> _loadMembers() async {
     try {
       final page = await widget.directoryService.listMembers(
@@ -61,6 +66,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
           }
           return ListView(
             children: [
+              // Household address (shown at the top, if recorded).
               if (widget.household.address != null)
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -70,6 +76,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                   ),
                 ),
               const Divider(height: 1),
+              // One row per member in this household.
               for (final member in members)
                 ListTile(
                   title: Text(member.fullName),
@@ -86,11 +93,15 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
 /// Small result wrapper so the FutureBuilder above can distinguish "loaded
 /// with an error" from "still loading" without throwing inside build().
 class PagedResultOrError {
+  /// The loaded members, if the fetch succeeded (else null).
   final List<Member>? members;
+  /// The error message, if the fetch failed (else null).
   final String? error;
 
   const PagedResultOrError._(this.members, this.error);
 
+  /// Wraps a successful member list.
   factory PagedResultOrError.ok(List<Member> members) => PagedResultOrError._(members, null);
+  /// Wraps an error message from a failed fetch.
   factory PagedResultOrError.error(String error) => PagedResultOrError._(null, error);
 }

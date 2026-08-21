@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../sermon_service.dart';
 
+/// Admin-only form to create a new sermon entry (title, speaker, series,
+/// date, video URL, description). Pops back with `true` on success so the
+/// caller (SermonListScreen) knows to refresh its list.
 class SermonFormScreen extends StatefulWidget {
   final SermonService sermonService;
 
@@ -11,6 +14,8 @@ class SermonFormScreen extends StatefulWidget {
   State<SermonFormScreen> createState() => _SermonFormScreenState();
 }
 
+/// Manages the new-sermon form's field controllers, selected date, and
+/// save/loading state.
 class _SermonFormScreenState extends State<SermonFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -18,9 +23,11 @@ class _SermonFormScreenState extends State<SermonFormScreen> {
   final _seriesController = TextEditingController();
   final _videoUrlController = TextEditingController();
   final _descriptionController = TextEditingController();
+  // Defaults to today; updated via the date picker below.
   DateTime _sermonDate = DateTime.now();
   bool _saving = false;
 
+  /// Opens the date picker and updates [_sermonDate] with the selection.
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -31,6 +38,8 @@ class _SermonFormScreenState extends State<SermonFormScreen> {
     if (picked != null) setState(() => _sermonDate = picked);
   }
 
+  /// Validates the form, then creates the sermon via the API and pops
+  /// back to the caller (passing `true` to signal success).
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);

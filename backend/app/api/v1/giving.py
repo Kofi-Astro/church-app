@@ -1,3 +1,7 @@
+"""
+Routes for the giving/Paystack flow: starting a transaction, and reading back
+giving history (a member's own, or — for finance roles — everyone's).
+"""
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -22,12 +26,17 @@ router = APIRouter(prefix="/giving", tags=["giving"])
 require_finance_read = require_role("admin", "finance_admin")
 
 
+# Starts a Paystack transaction for the caller and records it as "pending".
+# Returns the checkout URL the mobile app should open. Any logged-in user.
+# Returns 503 (not 500) if Paystack isn't configured yet — see app/core/paystack.py.
 @router.post("/initialize", response_model=GivingInitializeResponse)
 async def initialize_giving(
     payload: GivingInitializeRequest,
     repo: GivingRepository = Depends(get_giving_repository),
     profile: Profile = Depends(get_current_profile),
 ):
+    # Unique per-transaction reference so Paystack (and our own records) can
+    # tie the checkout session back to this specific attempt.
     reference = f"church-app-{uuid.uuid4().hex}"
     try:
         result = initialize_transaction(
@@ -56,6 +65,7 @@ async def initialize_giving(
     )
 
 
+# Paginated giving history for the caller's own transactions only. Any logged-in user.
 @router.get("/history", response_model=Page[GivingTransactionRead])
 async def my_giving_history(
     limit: int = Query(default=25, ge=1, le=100),
@@ -67,6 +77,7 @@ async def my_giving_history(
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
+# Paginated giving history across every member's transactions. admin/finance_admin only.
 @router.get("/transactions", response_model=Page[GivingTransactionRead])
 async def all_giving_transactions(
     limit: int = Query(default=25, ge=1, le=100),

@@ -11,10 +11,18 @@
 /// different backends without code changes.
 enum AppEnvironment { dev, staging, prod }
 
+/// Bundles all the environment-specific settings the app needs at runtime
+/// (which backend to call, which Supabase project to use, which
+/// environment this build is). Build one with [fromDartDefines].
 class EnvConfig {
+  /// Which environment this build was compiled for (dev/staging/prod).
   final AppEnvironment environment;
+  /// Base URL of our own FastAPI backend, e.g. http://localhost:8000.
   final String apiBaseUrl;
+  /// URL of the Supabase project this build talks to for auth/direct data.
   final String supabaseUrl;
+  /// Public (anon) Supabase API key — safe to ship in the app; never the
+  /// service_role key.
   final String supabaseAnonKey;
 
   const EnvConfig({
@@ -24,6 +32,10 @@ class EnvConfig {
     required this.supabaseAnonKey,
   });
 
+  /// Reads all config values from the --dart-define flags passed at build
+  /// time (see file-level comment above) and falls back to sane dev
+  /// defaults where possible. This is the normal way to construct
+  /// [EnvConfig] — call it once at app startup.
   static EnvConfig fromDartDefines() {
     const envName = String.fromEnvironment('ENV', defaultValue: 'dev');
     final environment = AppEnvironment.values.firstWhere(

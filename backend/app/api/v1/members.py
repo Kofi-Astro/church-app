@@ -1,3 +1,4 @@
+"""Routes for the member directory (CRUD), with search and household filtering."""
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.deps import require_role
@@ -7,10 +8,13 @@ from app.schemas.pagination import Page
 
 router = APIRouter(prefix="/members", tags=["members"])
 
+# Same read/write role split as households — see app/api/v1/households.py.
 require_read = require_role("admin", "finance_admin", "group_leader")
 require_write = require_role("admin")
 
 
+# Paginated, searchable list of members, optionally filtered to one household.
+# admin/finance_admin/group_leader only.
 @router.get("", response_model=Page[MemberRead])
 async def list_members(
     limit: int = Query(default=25, ge=1, le=100),
@@ -24,6 +28,7 @@ async def list_members(
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
+# Fetches one member by id. 404 if they don't exist. admin/finance_admin/group_leader.
 @router.get("/{member_id}", response_model=MemberRead)
 async def get_member(
     member_id: str,
@@ -36,6 +41,7 @@ async def get_member(
     return member
 
 
+# Adds a new member to the directory. admin only.
 @router.post("", response_model=MemberRead, status_code=status.HTTP_201_CREATED)
 async def create_member(
     payload: MemberCreate,
@@ -45,6 +51,8 @@ async def create_member(
     return repo.create(payload.model_dump())
 
 
+# Partially updates a member (only fields sent are changed). 404 if they don't
+# exist. admin only.
 @router.patch("/{member_id}", response_model=MemberRead)
 async def update_member(
     member_id: str,
@@ -58,6 +66,7 @@ async def update_member(
     return updated
 
 
+# Deletes a member. 404 if they don't exist. admin only.
 @router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_member(
     member_id: str,

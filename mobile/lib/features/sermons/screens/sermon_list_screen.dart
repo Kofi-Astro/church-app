@@ -8,8 +8,12 @@ import '../sermon_service.dart';
 import 'sermon_detail_screen.dart';
 import 'sermon_form_screen.dart';
 
+/// Main Sermons tab: shows a "Watch live" banner (when a livestream URL is
+/// set) followed by the sermon list, with an admin-only add button.
 class SermonListScreen extends StatefulWidget {
   final SermonService sermonService;
+  /// Current user's profile — used to decide whether the "add sermon"
+  /// button is shown (admin-only). Null if not signed in.
   final AppProfile? profile;
 
   const SermonListScreen({super.key, required this.sermonService, required this.profile});
@@ -18,6 +22,8 @@ class SermonListScreen extends StatefulWidget {
   State<SermonListScreen> createState() => _SermonListScreenState();
 }
 
+/// Manages the loaded sermon list and church settings (for the livestream
+/// banner), plus loading/error state.
 class _SermonListScreenState extends State<SermonListScreen> {
   List<Sermon> _sermons = [];
   ChurchSettings? _settings;
@@ -30,6 +36,8 @@ class _SermonListScreenState extends State<SermonListScreen> {
     _load();
   }
 
+  /// Fetches both the sermon list and church settings (for the livestream
+  /// banner) together.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -47,6 +55,8 @@ class _SermonListScreenState extends State<SermonListScreen> {
     }
   }
 
+  /// Opens the church's livestream URL in an external app/browser (does
+  /// nothing if none is set).
   Future<void> _watchLive() async {
     final url = _settings?.livestreamUrl;
     if (url == null || url.isEmpty) return;
@@ -60,6 +70,8 @@ class _SermonListScreenState extends State<SermonListScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sermons')),
+      // Add button, admins only — pushes the form and reloads the list if
+      // a sermon was actually created.
       floatingActionButton: canManage
           ? FloatingActionButton(
               onPressed: () async {
@@ -82,6 +94,8 @@ class _SermonListScreenState extends State<SermonListScreen> {
                 ? Center(child: Text(_error!))
                 : ListView(
                     children: [
+                      // "Watch live" banner — only shown when a livestream
+                      // URL is configured in church settings.
                       if (liveUrl != null && liveUrl.isNotEmpty)
                         Card(
                           margin: const EdgeInsets.all(12),
@@ -97,6 +111,7 @@ class _SermonListScreenState extends State<SermonListScreen> {
                           padding: EdgeInsets.all(32),
                           child: Text('No sermons yet.', textAlign: TextAlign.center),
                         ),
+                      // One row per sermon.
                       for (final sermon in _sermons)
                         ListTile(
                           title: Text(sermon.title),

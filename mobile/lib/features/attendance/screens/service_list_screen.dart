@@ -7,9 +7,13 @@ import '../attendance_service.dart';
 import '../models.dart';
 import 'check_in_screen.dart';
 
+/// Lists all church services, letting leaders/admins add new ones and tap
+/// into [CheckInScreen] to check members in.
 class ServiceListScreen extends StatefulWidget {
   final AttendanceService attendanceService;
   final DirectoryService directoryService;
+  /// Current user's profile — used to decide whether the "add service"
+  /// button is shown (admin/group-leader only). Null if not signed in.
   final AppProfile? profile;
 
   const ServiceListScreen({
@@ -23,6 +27,7 @@ class ServiceListScreen extends StatefulWidget {
   State<ServiceListScreen> createState() => _ServiceListScreenState();
 }
 
+/// Manages the loaded service list and the "add service" dialog flow.
 class _ServiceListScreenState extends State<ServiceListScreen> {
   List<ChurchService> _services = [];
   bool _loading = true;
@@ -34,6 +39,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
     _load();
   }
 
+  /// Fetches the full service list from the server.
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -49,8 +55,13 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
     }
   }
 
+  /// Shows a dialog to collect a new service's name and date (with a
+  /// nested StatefulBuilder so the date picker's selection updates the
+  /// dialog without rebuilding the whole screen), then creates it via the
+  /// API and refreshes the list on success.
   Future<void> _showAddServiceDialog() async {
     final nameController = TextEditingController();
+    // Defaults to today; updated in-dialog via the date picker below.
     DateTime selectedDate = DateTime.now();
 
     final create = await showDialog<bool>(

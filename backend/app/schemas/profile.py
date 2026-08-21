@@ -14,6 +14,8 @@ from pydantic import BaseModel
 
 
 class Role(str, Enum):
+    """The set of app-level roles a profile can have, used by require_role checks."""
+
     member = "member"
     group_leader = "group_leader"
     admin = "admin"
@@ -21,6 +23,8 @@ class Role(str, Enum):
 
 
 class Profile(BaseModel):
+    """The logged-in caller's identity + role, as resolved by get_current_profile."""
+
     id: str
     full_name: str
     role: Role

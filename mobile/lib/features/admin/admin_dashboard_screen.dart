@@ -30,6 +30,7 @@ class AdminDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Role checks gating each section below.
     final isAdminOrLeader = profile.role == AppRole.admin || profile.role == AppRole.groupLeader;
     final canSeeReports = profile.canAccessAdmin;
     // Finance data stays behind a hard wall until Phase 5 — see
@@ -41,6 +42,7 @@ class AdminDashboardScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          // Directory + attendance section — admins and group leaders.
           if (isAdminOrLeader) ...[
             const _SectionHeader('Directory'),
             ListTile(
@@ -84,6 +86,8 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
           ],
+          // Attendance report — anyone with admin access (admin,
+          // finance_admin, or group leader).
           if (canSeeReports)
             ListTile(
               leading: const Icon(Icons.bar_chart_outlined),
@@ -97,6 +101,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 ),
               ),
             ),
+          // Content management — admin only.
           if (profile.role == AppRole.admin) ...[
             const _SectionHeader('Content'),
             ListTile(
@@ -111,6 +116,9 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
           ],
+          // Giving — disabled placeholder until Paystack is integrated
+          // (Phase 5); shown to admin/finance_admin so they know it's
+          // coming, but not tappable.
           if (canSeeGivingPreview) ...[
             const _SectionHeader('Giving'),
             const ListTile(
@@ -126,6 +134,8 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 }
 
+/// Small uppercase label used to separate sections in the admin menu list
+/// (e.g. "DIRECTORY", "ATTENDANCE").
 class _SectionHeader extends StatelessWidget {
   final String title;
   const _SectionHeader(this.title);

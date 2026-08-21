@@ -1,3 +1,8 @@
+// Data models for the attendance feature (services, check-ins, and
+// report rows), matching the shapes returned by /api/v1/attendance*.
+
+/// A single church service/gathering (e.g. "Sunday Service, Aug 24") that
+/// members can be checked in to.
 class ChurchService {
   final String id;
   final String name;
@@ -11,6 +16,7 @@ class ChurchService {
     required this.createdAt,
   });
 
+  /// Builds a [ChurchService] from the raw JSON map returned by the API.
   factory ChurchService.fromJson(Map<String, dynamic> json) => ChurchService(
         id: json['id'] as String,
         name: json['name'] as String,
@@ -19,11 +25,14 @@ class ChurchService {
       );
 }
 
+/// One member's check-in to one service.
 class AttendanceRecord {
   final String id;
   final String serviceId;
   final String memberId;
   final DateTime checkedInAt;
+  /// Who performed the check-in (e.g. the leader running the door), if
+  /// recorded.
   final String? checkedInBy;
 
   const AttendanceRecord({
@@ -34,6 +43,7 @@ class AttendanceRecord {
     required this.checkedInBy,
   });
 
+  /// Builds an [AttendanceRecord] from the raw JSON map returned by the API.
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) => AttendanceRecord(
         id: json['id'] as String,
         serviceId: json['service_id'] as String,
@@ -43,6 +53,8 @@ class AttendanceRecord {
       );
 }
 
+/// One row in the attendance report: a service and how many people showed
+/// up to it. Used to render the report list and CSV export.
 class AttendanceReportRow {
   final String serviceId;
   final String serviceName;
@@ -56,6 +68,7 @@ class AttendanceReportRow {
     required this.attendeeCount,
   });
 
+  /// Builds an [AttendanceReportRow] from the raw JSON map returned by the API.
   factory AttendanceReportRow.fromJson(Map<String, dynamic> json) => AttendanceReportRow(
         serviceId: json['service_id'] as String,
         serviceName: json['service_name'] as String,

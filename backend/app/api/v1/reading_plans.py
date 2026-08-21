@@ -1,3 +1,4 @@
+"""Routes for Bible reading plans and their individual days."""
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import get_current_profile, require_role
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/reading-plans", tags=["reading-plans"])
 require_write = require_role("admin")
 
 
+# Lists all reading plans. Any logged-in user.
 @router.get("", response_model=list[ReadingPlanRead])
 async def list_reading_plans(
     repo: ReadingPlanRepository = Depends(get_reading_plan_repository),
@@ -25,6 +27,7 @@ async def list_reading_plans(
     return repo.list_plans()
 
 
+# Fetches one reading plan by id. 404 if it doesn't exist. Any logged-in user.
 @router.get("/{plan_id}", response_model=ReadingPlanRead)
 async def get_reading_plan(
     plan_id: str,
@@ -37,6 +40,7 @@ async def get_reading_plan(
     return plan
 
 
+# Creates a new reading plan. admin only.
 @router.post("", response_model=ReadingPlanRead, status_code=status.HTTP_201_CREATED)
 async def create_reading_plan(
     payload: ReadingPlanCreate,
@@ -48,6 +52,7 @@ async def create_reading_plan(
     return repo.create_plan(data)
 
 
+# Lists a plan's days in order. 404 if the plan itself doesn't exist. Any logged-in user.
 @router.get("/{plan_id}/days", response_model=list[ReadingPlanDayRead])
 async def list_reading_plan_days(
     plan_id: str,
@@ -59,6 +64,7 @@ async def list_reading_plan_days(
     return repo.list_days(plan_id)
 
 
+# Adds a new day to a plan. 404 if the plan doesn't exist. admin only.
 @router.post(
     "/{plan_id}/days", response_model=ReadingPlanDayRead, status_code=status.HTTP_201_CREATED
 )

@@ -47,6 +47,11 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    FastAPI startup/shutdown hook. Everything before `yield` runs once when the
+    app boots (here, just a log line); everything after `yield` would run on
+    shutdown (nothing to clean up yet).
+    """
     logger.info(
         "Starting %s in %s mode",
         settings.app_name,
@@ -88,4 +93,5 @@ async def health_check() -> dict:
 
 @app.get("/", tags=["system"])
 async def root() -> dict:
+    """Minimal landing endpoint — confirms the API is up and names the service."""
     return {"service": settings.app_name, "status": "running"}

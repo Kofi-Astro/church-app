@@ -1,3 +1,6 @@
+// Detail screen for a single small group: shows its description,
+// members, and shared materials, with management actions for leaders/
+// admins.
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,6 +11,9 @@ import '../../directory/screens/member_picker_screen.dart';
 import '../group_service.dart';
 import '../models.dart';
 
+/// Shows one [group]'s details: description, member list, and shared
+/// materials. Add-member/add-material actions are shown only when
+/// [profile] is the group's leader or an admin (see [_canManage]).
 class GroupDetailScreen extends StatefulWidget {
   final SmallGroup group;
   final GroupService groupService;
@@ -26,12 +32,20 @@ class GroupDetailScreen extends StatefulWidget {
   State<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
+// Loads and holds this group's members and materials. Both lists are
+// nullable to distinguish "not loaded / not visible to this user" (null)
+// from "loaded and empty" ([]) — see _load below.
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
   List<GroupMember>? _members;
+  // Null means materials couldn't be loaded (usually because the current
+  // user isn't a member of this group and the backend returned 403).
   List<GroupMaterial>? _materials;
+  // Whether the current user is a member of this group, inferred from
+  // whether the materials request succeeded (see _load).
   bool _isMember = false;
   bool _loading = true;
 
+  // Group leaders and admins get member/material management controls.
   bool get _canManage =>
       widget.profile?.role == AppRole.admin || widget.profile?.id == widget.group.leaderId;
 
@@ -41,6 +55,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     _load();
   }
 
+  // Loads members and materials independently so a failure on one
+  // doesn't block the other. Materials are backend-gated to members/
+  // admins only, so a 403 there is used to infer _isMember rather than
+  // treated as a hard error.
   Future<void> _load() async {
     setState(() => _loading = true);
 
@@ -63,6 +81,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  // Opens the member picker and, if a member was picked, adds them to
+  // this group.
   Future<void> _addMember() async {
     final picked = await Navigator.push(
       context,
@@ -80,6 +100,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     }
   }
 
+  // Shows a dialog to enter a new material's title/link, then adds it if
+  // confirmed with a non-empty title.
   Future<void> _addMaterial() async {
     final titleController = TextEditingController();
     final urlController = TextEditingController();
@@ -140,6 +162,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     Text(widget.group.description!),
                     const SizedBox(height: 16),
                   ],
+                  // Members section.
                   Text('Members', style: Theme.of(context).textTheme.titleMedium),
                   if (_members == null)
                     const Text('Members are visible to group members and admins only.')
@@ -154,6 +177,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       label: const Text('Add member'),
                     ),
                   const Divider(height: 32),
+                  // Shared materials section.
                   Text('Shared materials', style: Theme.of(context).textTheme.titleMedium),
                   if (!_isMember)
                     const Padding(

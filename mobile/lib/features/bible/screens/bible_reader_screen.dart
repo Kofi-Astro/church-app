@@ -7,10 +7,17 @@ import '../models.dart';
 import 'bible_bookmarks_screen.dart';
 import 'bible_search_screen.dart';
 
+/// Main Bible reading screen: shows one chapter's verses, lets the user
+/// jump to another book/chapter/translation, bookmark the chapter, and
+/// long-press a verse to highlight it. Falls back to the local offline
+/// cache automatically if the live fetch fails (e.g. no connection).
 class BibleReaderScreen extends StatefulWidget {
   final BibleApiService apiService;
   final BibleCache cache;
   final BibleSyncService syncService;
+  // Starting book/chapter/translation to open — defaults to John 1 (KJV)
+  // when opened from the main nav; callers like the bookmarks/search
+  // screens pass a specific passage to jump straight to it.
   final String initialTranslationId;
   final String initialBookId;
   final String initialBookName;
@@ -31,15 +38,23 @@ class BibleReaderScreen extends StatefulWidget {
   State<BibleReaderScreen> createState() => _BibleReaderScreenState();
 }
 
+/// Manages the currently displayed passage (translation/book/chapter),
+/// its fetched verse data, highlight state, and loading/error/offline
+/// status.
 class _BibleReaderScreenState extends State<BibleReaderScreen> {
+  // Current passage coordinates — mutable because "Previous"/"Next"/"Go to
+  // passage" change these in place rather than pushing a new screen.
   late String _translationId = widget.initialTranslationId;
   late String _bookId = widget.initialBookId;
   late String _bookName = widget.initialBookName;
   late int _chapter = widget.initialChapter;
 
   BibleChapter? _chapterData;
+  // Verse numbers the current user has highlighted in this chapter.
   Set<int> _highlightedVerses = {};
   bool _loading = true;
+  // True if the currently displayed chapter came from the local cache
+  // (i.e. the live fetch failed) — drives the "Offline" banner.
   bool _fromCache = false;
   String? _error;
 
@@ -49,6 +64,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     _load();
   }
 
+  /// Fetches the current chapter from the live API and caches it locally;
+  /// if that fails (e.g. offline), falls back to whatever cached copy
+  /// exists for this exact passage, and only shows an error if neither
+  /// works.
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -79,6 +98,9 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     }
   }
 
+  /// Updates screen state with a newly loaded chapter, also pulling in
+  /// this user's saved highlights for it (best-effort — a highlights
+  /// fetch failure doesn't block showing the chapter text).
   Future<void> _applyChapter(BibleChapter chapter, {required bool fromCache}) async {
     Set<int> highlights = {};
     try {
@@ -103,12 +125,18 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     });
   }
 
+  /// Switches to a different chapter number within the same book/
+  /// translation (used by the Previous/Next buttons). Ignores requests
+  /// below chapter 1 (there's no chapter-count check for the upper bound —
+  /// an out-of-range "Next" simply fails to load and shows an error).
   void _goToChapter(int chapter) {
     if (chapter < 1) return;
     setState(() => _chapter = chapter);
     _load();
   }
 
+  /// Adds or removes a highlight on [verse] for the current chapter,
+  /// updating local state immediately and syncing the change to Supabase.
   Future<void> _toggleHighlight(int verse) async {
     final highlighted = _highlightedVerses.contains(verse);
     try {
@@ -140,6 +168,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     }
   }
 
+  /// Saves the current chapter as a bookmark and shows a confirmation
+  /// snackbar.
   Future<void> _bookmarkChapter() async {
     try {
       await widget.syncService.addBookmark(
@@ -157,6 +187,10 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     }
   }
 
+  /// Shows a dialog to pick a translation, book code, and chapter number
+  /// directly, then jumps the reader to that passage. Uses a nested
+  /// StatefulBuilder so the translation dropdown updates within the
+  /// dialog without rebuilding the whole screen.
   Future<void> _showGoToDialog() async {
     final bookController = TextEditingController(text: _bookId);
     final chapterController = TextEditingController(text: '$_chapter');
@@ -216,6 +250,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_chapterData != null ? '${_chapterData!.reference} ($_translationId)' : 'Bible'),
+        // Toolbar: jump to passage, search offline cache, bookmark this
+        // chapter, view saved bookmarks.
         actions: [
           IconButton(
             icon: const Icon(Icons.menu_book_outlined),
@@ -263,6 +299,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
               ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!)))
               : Column(
                   children: [
+                    // Offline indicator banner — only shown when the
+                    // displayed chapter came from the local cache.
                     if (_fromCache)
                       Container(
                         width: double.infinity,
@@ -274,6 +312,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                           style: TextStyle(fontSize: 12),
                         ),
                       ),
+                    // Scrollable verse list — each verse is long-press-able
+                    // to toggle its highlight.
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.all(16),
@@ -282,6 +322,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                             GestureDetector(
                               onLongPress: () => _toggleHighlight(verse.verse),
                               child: Container(
+                                // Yellow tint when this verse is highlighted.
                                 color: _highlightedVerses.contains(verse.verse)
                                     ? Colors.yellow.withValues(alpha: 0.35)
                                     : null,
@@ -290,6 +331,8 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                                   text: TextSpan(
                                     style: DefaultTextStyle.of(context).style,
                                     children: [
+                                      // Bold verse number, then the verse
+                                      // text itself.
                                       TextSpan(
                                         text: '${verse.verse} ',
                                         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -303,6 +346,7 @@ class _BibleReaderScreenState extends State<BibleReaderScreen> {
                         ],
                       ),
                     ),
+                    // Previous/Next chapter navigation.
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: Row(

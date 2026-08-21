@@ -20,8 +20,12 @@ class MemberPickerScreen extends StatefulWidget {
   State<MemberPickerScreen> createState() => _MemberPickerScreenState();
 }
 
+/// Manages the search box, debounce timer, and result list for picking a
+/// member with an app account. Returns the picked [Member] via
+/// `Navigator.pop(context, member)`.
 class _MemberPickerScreenState extends State<MemberPickerScreen> {
   final _searchController = TextEditingController();
+  // Debounce timer so we don't fire a network request on every keystroke.
   Timer? _debounce;
   List<Member> _members = [];
   bool _loading = true;
@@ -39,11 +43,15 @@ class _MemberPickerScreenState extends State<MemberPickerScreen> {
     super.dispose();
   }
 
+  /// Called on every keystroke in the search box; restarts the debounce
+  /// timer so the actual search only fires after typing pauses.
   void _onQueryChanged(String query) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () => _search(query));
   }
 
+  /// Runs the member search and filters out members with no app account
+  /// (profileId == null), since those can't be picked here.
   Future<void> _search(String query) async {
     setState(() => _loading = true);
     try {

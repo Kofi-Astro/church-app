@@ -1,15 +1,22 @@
+// Talks to the backend's /api/v1/small-groups endpoints: listing groups,
+// managing membership, and sharing materials within a group.
 import '../../core/network/api_client.dart';
 import 'models.dart';
 
+/// API wrapper for small groups: the group list itself, member management,
+/// and shared materials (links/resources) within a group.
 class GroupService {
   final ApiClient _client;
   const GroupService(this._client);
 
+  /// Fetches all small groups visible to the current user.
   Future<List<SmallGroup>> listGroups() async {
     final json = await _client.get('/api/v1/small-groups');
     return (json as List).map((e) => SmallGroup.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Creates a new small group (admin-only on the backend). `leaderId` is
+  /// sent only if provided, using the `?` null-aware map-entry spread.
   Future<SmallGroup> createGroup({
     required String name,
     String? description,
@@ -33,6 +40,8 @@ class GroupService {
     return (json as List).map((e) => GroupMember.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Adds `profileId` as a member of `groupId` (admin/leader-only on the
+  /// backend).
   Future<void> addMember({required String groupId, required String profileId}) async {
     await _client.post(
       '/api/v1/small-groups/$groupId/members',
@@ -40,15 +49,20 @@ class GroupService {
     );
   }
 
+  /// Removes `profileId` from `groupId`'s membership.
   Future<void> removeMember({required String groupId, required String profileId}) async {
     await _client.delete('/api/v1/small-groups/$groupId/members/$profileId');
   }
 
+  /// Fetches shared materials (links/resources) for a group. Like
+  /// [listMembers], this throws a 403 if the caller isn't a member/admin.
   Future<List<GroupMaterial>> listMaterials(String groupId) async {
     final json = await _client.get('/api/v1/small-groups/$groupId/materials');
     return (json as List).map((e) => GroupMaterial.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Adds a new shared material (title + optional link/description) to a
+  /// group.
   Future<GroupMaterial> addMaterial({
     required String groupId,
     required String title,

@@ -1,3 +1,5 @@
+// Detail screen for a single reading plan: shows each day and lets the
+// user check off days as they complete them.
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
@@ -5,6 +7,10 @@ import '../models.dart';
 import '../reading_plan_progress_service.dart';
 import '../reading_plan_service.dart';
 
+/// Shows [plan]'s days with a progress bar and checkboxes for marking
+/// each day complete. Combines plan content (from [planService], the
+/// FastAPI backend) with per-user progress (from a local
+/// [ReadingPlanProgressService], talking to Supabase directly).
 class ReadingPlanDetailScreen extends StatefulWidget {
   final ReadingPlan plan;
   final ReadingPlanService planService;
@@ -21,9 +27,12 @@ class ReadingPlanDetailScreen extends StatefulWidget {
   State<ReadingPlanDetailScreen> createState() => _ReadingPlanDetailScreenState();
 }
 
+// Holds this plan's days plus which day numbers the current user has
+// completed.
 class _ReadingPlanDetailScreenState extends State<ReadingPlanDetailScreen> {
   final _progressService = ReadingPlanProgressService();
   List<ReadingPlanDay> _days = [];
+  // Set of day numbers the current user has marked complete.
   Set<int> _completed = {};
   bool _loading = true;
   String? _error;
@@ -34,6 +43,9 @@ class _ReadingPlanDetailScreenState extends State<ReadingPlanDetailScreen> {
     _load();
   }
 
+  // Loads the plan's days (required — failure shows the error state) and
+  // the user's completion progress (best-effort — failure just leaves
+  // progress empty, see the inner try/catch).
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -57,6 +69,9 @@ class _ReadingPlanDetailScreenState extends State<ReadingPlanDetailScreen> {
     }
   }
 
+  // Toggles a day's completion state. Updates the UI immediately
+  // (optimistic update) then persists the change; if saving fails, the
+  // UI change is rolled back and an error is shown.
   Future<void> _toggleDay(int dayNumber) async {
     final wasComplete = _completed.contains(dayNumber);
     setState(() {
@@ -71,6 +86,7 @@ class _ReadingPlanDetailScreenState extends State<ReadingPlanDetailScreen> {
         await _progressService.markComplete(planId: widget.plan.id, dayNumber: dayNumber);
       }
     } catch (e) {
+      // Roll back the optimistic update since the save failed.
       setState(() {
         _completed = wasComplete ? {..._completed, dayNumber} : _completed.difference({dayNumber});
       });
@@ -96,6 +112,7 @@ class _ReadingPlanDetailScreenState extends State<ReadingPlanDetailScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Text(widget.plan.description!),
                       ),
+                    // Progress bar + "X of Y days complete" summary.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
@@ -108,6 +125,7 @@ class _ReadingPlanDetailScreenState extends State<ReadingPlanDetailScreen> {
                       ),
                     ),
                     const Divider(height: 24),
+                    // Checklist of days.
                     Expanded(
                       child: _days.isEmpty
                           ? const Center(child: Text('No days added to this plan yet.'))

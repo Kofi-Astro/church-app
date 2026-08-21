@@ -6,6 +6,8 @@ import '../bible_sync_service.dart';
 import '../models.dart';
 import 'bible_reader_screen.dart';
 
+/// Lists the current user's saved chapter bookmarks; tapping one opens
+/// [BibleReaderScreen] at that chapter, and each row can be deleted.
 class BibleBookmarksScreen extends StatefulWidget {
   final BibleApiService apiService;
   final BibleCache cache;
@@ -22,6 +24,7 @@ class BibleBookmarksScreen extends StatefulWidget {
   State<BibleBookmarksScreen> createState() => _BibleBookmarksScreenState();
 }
 
+/// Manages the loaded bookmark list and its loading/error state.
 class _BibleBookmarksScreenState extends State<BibleBookmarksScreen> {
   List<BibleBookmark> _bookmarks = [];
   bool _loading = true;
@@ -33,6 +36,7 @@ class _BibleBookmarksScreenState extends State<BibleBookmarksScreen> {
     _load();
   }
 
+  /// Fetches the current user's bookmarks from Supabase.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -48,6 +52,7 @@ class _BibleBookmarksScreenState extends State<BibleBookmarksScreen> {
     }
   }
 
+  /// Deletes a bookmark and refreshes the list.
   Future<void> _remove(BibleBookmark bookmark) async {
     await widget.syncService.removeBookmark(bookmark.id);
     await _load();

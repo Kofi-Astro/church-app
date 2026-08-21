@@ -19,6 +19,12 @@ from app.core.config import get_settings
 
 @lru_cache
 def get_supabase() -> Client:
+    """
+    Builds (once — @lru_cache means every subsequent call returns the same
+    instance) and returns the shared Supabase client used by every repository.
+    Raises a RuntimeError with setup instructions if the required env vars
+    aren't set yet, instead of letting the `supabase` library fail confusingly.
+    """
     settings = get_settings()
     if not settings.supabase_url or not settings.supabase_service_role_key:
         raise RuntimeError(

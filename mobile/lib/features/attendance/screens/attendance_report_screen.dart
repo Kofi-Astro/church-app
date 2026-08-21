@@ -8,6 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import '../attendance_service.dart';
 import '../models.dart';
 
+/// Shows per-service attendance totals for a selectable date range, with a
+/// running total and a CSV export/share button.
 class AttendanceReportScreen extends StatefulWidget {
   final AttendanceService attendanceService;
 
@@ -17,10 +19,15 @@ class AttendanceReportScreen extends StatefulWidget {
   State<AttendanceReportScreen> createState() => _AttendanceReportScreenState();
 }
 
+/// Manages the report data, the selected date range, and the CSV export
+/// (loading/exporting spinners, error state).
 class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
   List<AttendanceReportRow> _rows = [];
+  // Selected date range filter; null means "all time".
   DateTimeRange? _range;
   bool _loading = true;
+  // True while the CSV export/share is in progress (drives the export
+  // button's spinner).
   bool _exporting = false;
   String? _error;
 
@@ -30,6 +37,7 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
     _load();
   }
 
+  /// Fetches report rows for the current [_range] (or all time if unset).
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -48,6 +56,8 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
     }
   }
 
+  /// Opens the date-range picker and, if the user confirms a selection,
+  /// reloads the report for that range.
   Future<void> _pickRange() async {
     final picked = await showDateRangePicker(
       context: context,
@@ -60,6 +70,8 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
     await _load();
   }
 
+  /// Downloads the report as CSV, writes it to a temp file, then opens the
+  /// OS share sheet so the user can save/send it (e.g. email to the board).
   Future<void> _exportCsv() async {
     setState(() => _exporting = true);
     try {
@@ -89,7 +101,10 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
       appBar: AppBar(
         title: const Text('Attendance report'),
         actions: [
+          // Date-range filter button.
           IconButton(icon: const Icon(Icons.date_range), onPressed: _pickRange),
+          // Export/share button — shows a spinner while exporting, and is
+          // disabled while exporting or when there's nothing to export.
           IconButton(
             icon: _exporting
                 ? const SizedBox(
@@ -110,6 +125,7 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                 ? Center(child: Text(_error!))
                 : ListView(
                     children: [
+                      // Summary row with the running total for the range.
                       ListTile(
                         title: const Text('Total attendance in range'),
                         trailing: Text(
@@ -123,6 +139,7 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                           padding: EdgeInsets.all(32),
                           child: Text('No services in this range.', textAlign: TextAlign.center),
                         ),
+                      // One row per service with its attendee count.
                       for (final row in _rows)
                         ListTile(
                           title: Text(row.serviceName),

@@ -16,6 +16,11 @@ from app.core.config import get_settings
 
 
 def configure_logging() -> None:
+    """
+    Sets up the root logger once at process startup (called from app/main.py).
+    Every `logging.getLogger(...)` call anywhere in the app inherits this
+    config, so log lines come out as single-line JSON-ish text on stdout.
+    """
     settings = get_settings()
 
     handler = logging.StreamHandler(sys.stdout)

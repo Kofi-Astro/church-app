@@ -7,8 +7,13 @@ import '../directory_service.dart';
 import '../models.dart';
 import 'member_detail_screen.dart';
 
+/// Full member directory search — like [MemberPickerScreen] but for
+/// general Browse/lookup use (not restricted to members with app
+/// accounts), and lets admins add new members.
 class MemberSearchScreen extends StatefulWidget {
   final DirectoryService directoryService;
+  /// Current user's profile — used to decide whether the "add member"
+  /// button is shown (admin-only). Null if not signed in.
   final AppProfile? profile;
 
   const MemberSearchScreen({super.key, required this.directoryService, required this.profile});
@@ -17,8 +22,11 @@ class MemberSearchScreen extends StatefulWidget {
   State<MemberSearchScreen> createState() => _MemberSearchScreenState();
 }
 
+/// Manages the search box, debounce timer, result list, and "add member"
+/// dialog flow.
 class _MemberSearchScreenState extends State<MemberSearchScreen> {
   final _searchController = TextEditingController();
+  // Debounce timer so we don't fire a network request on every keystroke.
   Timer? _debounce;
   List<Member> _members = [];
   bool _loading = true;
@@ -37,11 +45,14 @@ class _MemberSearchScreenState extends State<MemberSearchScreen> {
     super.dispose();
   }
 
+  /// Called on every keystroke in the search box; restarts the debounce
+  /// timer so the actual search only fires after typing pauses.
   void _onQueryChanged(String query) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () => _search(query));
   }
 
+  /// Runs the member search for [query] (empty string returns everyone).
   Future<void> _search(String query) async {
     setState(() {
       _loading = true;
@@ -57,6 +68,8 @@ class _MemberSearchScreenState extends State<MemberSearchScreen> {
     }
   }
 
+  /// Shows a dialog to collect a new member's name/email/phone, then
+  /// creates them via the API and re-runs the current search on success.
   Future<void> _showAddMemberDialog() async {
     final nameController = TextEditingController();
     final emailController = TextEditingController();

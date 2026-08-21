@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../core/auth/auth_service.dart';
 
+/// Simple email + password sign-in screen. On success, the app-wide
+/// auth-state listener (AuthGate) takes care of navigating away — this
+/// screen doesn't push a route itself.
 class LoginScreen extends StatefulWidget {
   final AuthService authService;
 
@@ -11,10 +14,14 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+/// Manages the login form's field controllers, validation, and
+/// submit/loading/error state.
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  // True while a sign-in request is in flight — disables the button and
+  // shows a spinner so the user can't double-submit.
   bool _submitting = false;
   String? _error;
 
@@ -25,6 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  /// Validates the form, then attempts sign-in with the entered
+  /// credentials, showing an error message on failure.
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -61,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text('Church App', style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 32),
+                  // Email field.
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(labelText: 'Email'),
@@ -69,6 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         (value == null || !value.contains('@')) ? 'Enter a valid email' : null,
                   ),
                   const SizedBox(height: 16),
+                  // Password field — submitting from the keyboard (e.g.
+                  // tapping "done") also triggers sign-in.
                   TextFormField(
                     controller: _passwordController,
                     decoration: const InputDecoration(labelText: 'Password'),
@@ -77,11 +89,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         (value == null || value.isEmpty) ? 'Enter your password' : null,
                     onFieldSubmitted: (_) => _submit(),
                   ),
+                  // Error message, shown only after a failed attempt.
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                   ],
                   const SizedBox(height: 24),
+                  // Submit button — disabled and shows a spinner while
+                  // signing in.
                   FilledButton(
                     onPressed: _submitting ? null : _submit,
                     child: _submitting

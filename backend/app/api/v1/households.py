@@ -1,3 +1,4 @@
+"""Routes for the household directory (CRUD)."""
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.deps import require_role
@@ -16,6 +17,7 @@ require_read = require_role("admin", "finance_admin", "group_leader")
 require_write = require_role("admin")
 
 
+# Paginated list of households. admin/finance_admin/group_leader only.
 @router.get("", response_model=Page[HouseholdRead])
 async def list_households(
     limit: int = Query(default=25, ge=1, le=100),
@@ -27,6 +29,7 @@ async def list_households(
     return Page(items=items, total=total, limit=limit, offset=offset)
 
 
+# Fetches one household by id. 404 if it doesn't exist. admin/finance_admin/group_leader.
 @router.get("/{household_id}", response_model=HouseholdRead)
 async def get_household(
     household_id: str,
@@ -39,6 +42,7 @@ async def get_household(
     return household
 
 
+# Creates a new household. admin only.
 @router.post("", response_model=HouseholdRead, status_code=status.HTTP_201_CREATED)
 async def create_household(
     payload: HouseholdCreate,
@@ -48,6 +52,8 @@ async def create_household(
     return repo.create(payload.model_dump())
 
 
+# Partially updates a household (only fields sent are changed). 404 if it doesn't
+# exist. admin only.
 @router.patch("/{household_id}", response_model=HouseholdRead)
 async def update_household(
     household_id: str,
@@ -61,6 +67,7 @@ async def update_household(
     return updated
 
 
+# Deletes a household. 404 if it doesn't exist. admin only.
 @router.delete("/{household_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_household(
     household_id: str,

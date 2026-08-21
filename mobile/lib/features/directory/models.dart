@@ -1,6 +1,11 @@
+// Data models for the directory feature (households + members), matching
+// the shapes returned by /api/v1/households and /api/v1/members.
+
+/// A family/home unit that members can belong to (e.g. "The Smith Family").
 class Household {
   final String id;
   final String name;
+  /// Optional home address — may be null if not recorded.
   final String? address;
   final DateTime createdAt;
 
@@ -11,6 +16,7 @@ class Household {
     required this.createdAt,
   });
 
+  /// Builds a [Household] from the raw JSON map returned by the API.
   factory Household.fromJson(Map<String, dynamic> json) => Household(
         id: json['id'] as String,
         name: json['name'] as String,
@@ -19,9 +25,14 @@ class Household {
       );
 }
 
+/// A single congregation member/person in the directory.
 class Member {
   final String id;
+  /// Links to this member's Supabase auth profile, if they have an app
+  /// login — null for members who are tracked in the directory but don't
+  /// (yet) have their own account.
   final String? profileId;
+  /// Household this member belongs to, if any.
   final String? householdId;
   final String fullName;
   final String? email;
@@ -38,6 +49,7 @@ class Member {
     required this.createdAt,
   });
 
+  /// Builds a [Member] from the raw JSON map returned by the API.
   factory Member.fromJson(Map<String, dynamic> json) => Member(
         id: json['id'] as String,
         profileId: json['profile_id'] as String?,

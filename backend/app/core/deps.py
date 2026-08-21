@@ -14,6 +14,17 @@ from app.schemas.profile import Profile
 
 
 async def get_current_profile(authorization: str | None = Header(default=None)) -> Profile:
+    """
+    FastAPI dependency that resolves "who is calling this endpoint?".
+
+    Reads the `Authorization: Bearer <token>` header, asks Supabase Auth to
+    validate the token, then looks up the matching row in the `profiles` table
+    (which is where each user's app-level `role`, e.g. member/leader/admin,
+    lives). Raises 401 if the token is missing/invalid/expired, and 403 if the
+    token is valid but there's no profile row for that auth user yet. Any
+    route that depends on this (directly or via `require_role`) is effectively
+    "logged-in users only".
+    """
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing bearer token")
 
@@ -45,6 +56,8 @@ async def get_current_profile(authorization: str | None = Header(default=None)) 
 def require_role(*allowed_roles: str):
     """Returns a dependency that 403s unless the caller's profile has one of `allowed_roles`."""
 
+    # Runs get_current_profile first (so this also enforces "must be logged in"),
+    # then checks the resulting profile's role against the allowed list.
     async def _check(profile: Profile = Depends(get_current_profile)) -> Profile:
         if profile.role not in allowed_roles:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient role for this action")

@@ -20,15 +20,22 @@ class AuthGate extends StatefulWidget {
   State<AuthGate> createState() => _AuthGateState();
 }
 
+// Tracks the current signed-in profile (if any) and reacts to Supabase
+// auth state changes so the UI updates automatically on sign-in/sign-out.
 class _AuthGateState extends State<AuthGate> {
   AppProfile? _profile;
   bool _loading = true;
+  // True when there's a valid Supabase session but no matching row in
+  // `profiles` yet — an edge case handled with its own screen below
+  // rather than silently treating the user as signed out.
   bool _sessionMissingProfile = false;
   StreamSubscription<dynamic>? _subscription;
 
   @override
   void initState() {
     super.initState();
+    // Re-check auth state on every Supabase auth event (sign-in, sign-out,
+    // token refresh, etc.) so this widget always reflects reality.
     _subscription = widget.authService.onAuthStateChange.listen((_) => _refresh());
     _refresh();
   }
@@ -39,6 +46,8 @@ class _AuthGateState extends State<AuthGate> {
     super.dispose();
   }
 
+  // Re-fetches the current session's profile (or clears it if signed
+  // out) and updates state accordingly.
   Future<void> _refresh() async {
     setState(() => _loading = true);
     final hasSession = widget.authService.currentSession != null;

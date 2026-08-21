@@ -8,6 +8,9 @@ import '../../directory/models.dart';
 import '../attendance_service.dart';
 import '../models.dart';
 
+/// Lets a leader search the member directory and tap to check members in
+/// to a specific [service]. Already-checked-in members show a checkmark
+/// instead of a "Check in" button.
 class CheckInScreen extends StatefulWidget {
   final ChurchService service;
   final AttendanceService attendanceService;
@@ -24,10 +27,16 @@ class CheckInScreen extends StatefulWidget {
   State<CheckInScreen> createState() => _CheckInScreenState();
 }
 
+/// Manages the member search results plus the set of members already
+/// checked in to this service, so the UI can show who's present at a
+/// glance and optimistically update as leaders tap "Check in".
 class _CheckInScreenState extends State<CheckInScreen> {
   final _searchController = TextEditingController();
+  // Debounce timer so we don't fire a network request on every keystroke.
   Timer? _debounce;
   List<Member> _members = [];
+  // IDs of members already checked in to this service — drives the
+  // checkmark vs. "Check in" button in the list.
   Set<String> _checkedInMemberIds = {};
   bool _loading = true;
   String? _error;
@@ -45,6 +54,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
     super.dispose();
   }
 
+  /// Loads who's already checked in (to seed the checkmarks), then runs an
+  /// initial empty search to populate the member list.
   Future<void> _loadAttendeesThenSearch() async {
     try {
       final attendees = await widget.attendanceService.listAttendees(widget.service.id);
@@ -56,11 +67,14 @@ class _CheckInScreenState extends State<CheckInScreen> {
     await _search('');
   }
 
+  /// Called on every keystroke in the search box; restarts the debounce
+  /// timer so the actual search only fires after typing pauses.
   void _onQueryChanged(String query) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 350), () => _search(query));
   }
 
+  /// Runs the member search for [query] (empty string returns everyone).
   Future<void> _search(String query) async {
     setState(() {
       _loading = true;
@@ -76,6 +90,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
     }
   }
 
+  /// Marks [member] present immediately in the UI (optimistic update),
+  /// then confirms it with the server — rolling the UI change back if the
+  /// request fails.
   Future<void> _markPresent(Member member) async {
     setState(() => _checkedInMemberIds = {..._checkedInMemberIds, member.id});
     try {
@@ -84,6 +101,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
         memberId: member.id,
       );
     } catch (e) {
+      // Roll back the optimistic update since the server call failed.
       setState(() => _checkedInMemberIds = _checkedInMemberIds.difference({member.id}));
       if (!mounted) return;
       ScaffoldMessenger.of(context)

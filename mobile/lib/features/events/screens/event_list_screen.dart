@@ -1,3 +1,5 @@
+// Main Events screen: lists upcoming church events, lets members RSVP,
+// and (for admins) links to the create-event form.
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -6,6 +8,8 @@ import '../event_service.dart';
 import '../models.dart';
 import 'event_form_screen.dart';
 
+/// Lists all events the current user can see, with inline RSVP controls.
+/// Shows a "New event" FAB only when [profile] is an admin.
 class EventListScreen extends StatefulWidget {
   final EventService eventService;
   final AppProfile? profile;
@@ -16,9 +20,13 @@ class EventListScreen extends StatefulWidget {
   State<EventListScreen> createState() => _EventListScreenState();
 }
 
+// Holds the fetched event list plus loading/error state for the initial
+// load and pull-to-refresh.
 class _EventListScreenState extends State<EventListScreen> {
   List<ChurchEvent> _events = [];
   bool _loading = true;
+  // Error message from the last failed load, or null if the last load
+  // succeeded (or hasn't finished yet).
   String? _error;
 
   @override
@@ -27,6 +35,8 @@ class _EventListScreenState extends State<EventListScreen> {
     _load();
   }
 
+  // Fetches the event list from the backend; used both on first load and
+  // on pull-to-refresh.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -42,6 +52,8 @@ class _EventListScreenState extends State<EventListScreen> {
     }
   }
 
+  // Sets the RSVP for `event` to `status`, or clears it if the user tapped
+  // the same status they already had selected (toggle behavior).
   Future<void> _rsvp(ChurchEvent event, RsvpStatus status) async {
     final index = _events.indexWhere((e) => e.id == event.id);
     try {
@@ -61,6 +73,7 @@ class _EventListScreenState extends State<EventListScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Events')),
+      // Only admins get the "create event" FAB.
       floatingActionButton: canManage
           ? FloatingActionButton(
               onPressed: () async {
@@ -70,6 +83,8 @@ class _EventListScreenState extends State<EventListScreen> {
                     builder: (context) => EventFormScreen(eventService: widget.eventService),
                   ),
                 );
+                // EventFormScreen pops with `true` when it successfully
+                // created an event, so reload the list to show it.
                 if (created == true) _load();
               },
               child: const Icon(Icons.add),
@@ -90,6 +105,8 @@ class _EventListScreenState extends State<EventListScreen> {
                           ),
                         ],
                       )
+                    // One card per event, with title/date/location/
+                    // description and RSVP choice chips.
                     : ListView.builder(
                         itemCount: _events.length,
                         itemBuilder: (context, index) {

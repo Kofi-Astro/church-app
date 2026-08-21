@@ -4,10 +4,13 @@ import '../../core/network/api_client.dart';
 import '../../core/network/paged_result.dart';
 import 'models.dart';
 
+/// Calls the /api/v1/sermons and /api/v1/church-settings endpoints.
 class SermonService {
   final ApiClient _client;
   const SermonService(this._client);
 
+  /// Lists sermons, optionally filtered by series/speaker/free-text
+  /// [search], newest [limit] at a time starting at [offset].
   Future<PagedResult<Sermon>> listSermons({
     int limit = 25,
     int offset = 0,
@@ -28,6 +31,7 @@ class SermonService {
     return PagedResult.fromJson(json as Map<String, dynamic>, Sermon.fromJson);
   }
 
+  /// Creates a new sermon entry (admin-only server-side).
   Future<Sermon> createSermon({
     required String title,
     String? speaker,
@@ -50,15 +54,19 @@ class SermonService {
     return Sermon.fromJson(json as Map<String, dynamic>);
   }
 
+  /// Fetches church-wide settings (currently just the livestream URL).
   Future<ChurchSettings> getChurchSettings() async {
     final json = await _client.get('/api/v1/church-settings');
     return ChurchSettings.fromJson(json as Map<String, dynamic>);
   }
 
+  /// Updates the livestream URL shown in the "Watch live" banner — pass
+  /// null (or empty, per the caller's convention) to clear/hide it.
   Future<ChurchSettings> updateLivestreamUrl(String? url) async {
     final json = await _client.patch('/api/v1/church-settings', body: {'livestream_url': url});
     return ChurchSettings.fromJson(json as Map<String, dynamic>);
   }
 
+  // Formats a DateTime as just the date part (yyyy-MM-dd) for the API.
   static String _dateOnly(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
 }

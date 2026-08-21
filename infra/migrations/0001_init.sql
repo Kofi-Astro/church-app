@@ -31,6 +31,13 @@ create policy "profiles: users can read their own profile"
   on profiles for select
   using (auth.uid() = id);
 
+-- NOTE: as originally written, this policy caused "infinite recursion
+-- detected in policy" errors — deciding whether a SELECT on `profiles`
+-- is allowed by running another SELECT on `profiles` means this same
+-- policy has to evaluate itself. That bug (and the fix — a
+-- SECURITY DEFINER function that reads the row without re-triggering
+-- RLS) is in 0006_fix_profiles_rls.sql. Left as-is here since migrations
+-- are a historical record, not edited after the fact.
 create policy "profiles: admins can read all profiles"
   on profiles for select
   using (
@@ -40,6 +47,12 @@ create policy "profiles: admins can read all profiles"
     )
   );
 
+-- NOTE: despite the name, this policy alone does NOT stop a user from
+-- changing their own `role` column (RLS policies are row-level, not
+-- column-level) — a signed-in member could otherwise PATCH themselves
+-- straight to admin. 0006_fix_profiles_rls.sql closes that gap with a
+-- trigger that blocks any role change unless the caller is already an
+-- admin or is the backend acting via the service_role key.
 create policy "profiles: users can update their own non-role fields"
   on profiles for update
   using (auth.uid() = id)

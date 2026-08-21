@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../sermon_service.dart';
 
+/// Admin-only screen to set (or clear) the church-wide livestream URL
+/// shown as a "Watch live" banner on the Sermons tab.
 class LivestreamSettingsScreen extends StatefulWidget {
   final SermonService sermonService;
 
@@ -11,6 +13,8 @@ class LivestreamSettingsScreen extends StatefulWidget {
   State<LivestreamSettingsScreen> createState() => _LivestreamSettingsScreenState();
 }
 
+/// Manages the text field's content plus loading/saving/error state for
+/// the livestream URL setting.
 class _LivestreamSettingsScreenState extends State<LivestreamSettingsScreen> {
   final _controller = TextEditingController();
   bool _loading = true;
@@ -23,6 +27,7 @@ class _LivestreamSettingsScreenState extends State<LivestreamSettingsScreen> {
     _load();
   }
 
+  /// Fetches the current livestream URL and pre-fills the text field.
   Future<void> _load() async {
     try {
       final settings = await widget.sermonService.getChurchSettings();
@@ -34,6 +39,8 @@ class _LivestreamSettingsScreenState extends State<LivestreamSettingsScreen> {
     }
   }
 
+  /// Saves the text field's content as the new livestream URL (empty text
+  /// clears it), showing a confirmation or error snackbar.
   Future<void> _save() async {
     setState(() => _saving = true);
     try {

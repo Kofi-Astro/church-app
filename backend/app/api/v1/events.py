@@ -1,3 +1,4 @@
+"""Routes for church events and member RSVPs to them."""
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import get_current_profile, require_role
@@ -10,6 +11,8 @@ router = APIRouter(prefix="/events", tags=["events"])
 require_write = require_role("admin")
 
 
+# Shared helper: turns a raw event row into the EventRead shape the API returns,
+# filling in the RSVP tally and this caller's own RSVP status along the way.
 def _to_read_model(event: dict, profile: Profile, repo: EventRepository) -> EventRead:
     return EventRead(
         **event,
@@ -18,6 +21,7 @@ def _to_read_model(event: dict, profile: Profile, repo: EventRepository) -> Even
     )
 
 
+# Lists all events with RSVP counts and the caller's own RSVP. Any logged-in user.
 @router.get("", response_model=list[EventRead])
 async def list_events(
     repo: EventRepository = Depends(get_event_repository),
@@ -26,6 +30,7 @@ async def list_events(
     return [_to_read_model(e, profile, repo) for e in repo.list()]
 
 
+# Fetches one event by id. 404 if it doesn't exist. Any logged-in user.
 @router.get("/{event_id}", response_model=EventRead)
 async def get_event(
     event_id: str,
@@ -38,6 +43,7 @@ async def get_event(
     return _to_read_model(event, profile, repo)
 
 
+# Creates a new event. admin only.
 @router.post("", response_model=EventRead, status_code=status.HTTP_201_CREATED)
 async def create_event(
     payload: EventCreate,
@@ -51,6 +57,7 @@ async def create_event(
     return _to_read_model(event, profile, repo)
 
 
+# Deletes an event. 404 if it doesn't exist. admin only.
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(
     event_id: str,
@@ -61,6 +68,7 @@ async def delete_event(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
 
 
+# Sets (creates or updates) the caller's own RSVP for an event. Any logged-in user.
 @router.put("/{event_id}/rsvp", response_model=EventRead)
 async def set_rsvp(
     event_id: str,
@@ -75,6 +83,7 @@ async def set_rsvp(
     return _to_read_model(event, profile, repo)
 
 
+# Clears (removes) the caller's own RSVP for an event. Any logged-in user.
 @router.delete("/{event_id}/rsvp", response_model=EventRead)
 async def clear_rsvp(
     event_id: str,

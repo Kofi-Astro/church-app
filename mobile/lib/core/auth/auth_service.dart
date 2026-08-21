@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Role mirrors the `app_role` enum in infra/migrations/0001_init.sql.
 enum AppRole { member, groupLeader, admin, financeAdmin }
 
+/// Converts the role string stored in the database (snake_case, e.g.
+/// 'group_leader') into an [AppRole]. Unrecognized/missing values fall
+/// back to the least-privileged role ([AppRole.member]).
 AppRole roleFromString(String value) {
   switch (value) {
     case 'group_leader':
@@ -16,6 +19,9 @@ AppRole roleFromString(String value) {
   }
 }
 
+/// The signed-in user's profile info as stored in the `profiles` table
+/// (name + role). This is the app's local copy of "who is this person and
+/// what are they allowed to do" — separate from Supabase's own auth user.
 class AppProfile {
   final String id;
   final String fullName;
@@ -23,6 +29,8 @@ class AppProfile {
 
   const AppProfile({required this.id, required this.fullName, required this.role});
 
+  /// True for any role above plain member — used to decide whether to show
+  /// admin-only UI (e.g. the admin dashboard entry point).
   bool get canAccessAdmin =>
       role == AppRole.admin || role == AppRole.financeAdmin || role == AppRole.groupLeader;
 }
@@ -32,16 +40,23 @@ class AppProfile {
 /// ApiClient talks to our own FastAPI backend — see docs/threat-model.md
 /// for why those are two different trust boundaries.
 class AuthService {
+  /// The global Supabase client instance (set up once at app startup).
   SupabaseClient get _client => Supabase.instance.client;
 
+  /// The current logged-in session, or null if nobody is signed in.
   Session? get currentSession => _client.auth.currentSession;
 
+  /// Fires whenever sign-in/sign-out/token-refresh happens, so the app can
+  /// react (e.g. redirect to login) without polling.
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
 
+  /// Signs the user in with email + password via Supabase Auth. Throws if
+  /// the credentials are invalid; callers should catch and show an error.
   Future<void> signInWithPassword({required String email, required String password}) async {
     await _client.auth.signInWithPassword(email: email, password: password);
   }
 
+  /// Signs the current user out and clears the local session.
   Future<void> signOut() async {
     await _client.auth.signOut();
   }

@@ -1,3 +1,5 @@
+// Menu screen shown for the "Grow" bottom-nav tab; see the class comment
+// below for why this groups multiple features into one tab.
 import 'package:flutter/material.dart';
 
 import '../../core/auth/auth_service.dart';

@@ -1,3 +1,5 @@
+// Top-level Small Groups screen: lists all groups and (for admins) lets
+// you create a new one.
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
@@ -7,6 +9,8 @@ import '../group_service.dart';
 import '../models.dart';
 import 'group_detail_screen.dart';
 
+/// Lists all small groups the current user can see; tapping one opens
+/// [GroupDetailScreen]. Shows a "New group" FAB only for admins.
 class GroupListScreen extends StatefulWidget {
   final GroupService groupService;
   final DirectoryService directoryService;
@@ -23,6 +27,7 @@ class GroupListScreen extends StatefulWidget {
   State<GroupListScreen> createState() => _GroupListScreenState();
 }
 
+// Holds the fetched group list plus loading/error state.
 class _GroupListScreenState extends State<GroupListScreen> {
   List<SmallGroup> _groups = [];
   bool _loading = true;
@@ -34,6 +39,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
     _load();
   }
 
+  // Fetches the group list; used on first load and pull-to-refresh.
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -49,6 +55,8 @@ class _GroupListScreenState extends State<GroupListScreen> {
     }
   }
 
+  // Shows a dialog to enter a new group's name/description and optionally
+  // pick a leader (via MemberPickerScreen), then creates it if confirmed.
   Future<void> _showCreateGroupDialog() async {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();

@@ -1,3 +1,8 @@
+// Data models for the Bible feature: translations, verses/chapters (from
+// bible-api.com), and the user's own bookmarks/highlights (from Supabase).
+
+/// One available Bible translation (e.g. King James Version), identified
+/// by the short code bible-api.com uses (e.g. 'kjv').
 class BibleTranslation {
   final String id;
   final String name;
@@ -17,12 +22,14 @@ const kBibleTranslations = [
   BibleTranslation(id: 'darby', name: 'Darby Bible'),
 ];
 
+/// A single numbered verse and its text.
 class BibleVerse {
   final int verse;
   final String text;
 
   const BibleVerse({required this.verse, required this.text});
 
+  /// Builds a [BibleVerse] from the raw JSON returned by bible-api.com.
   factory BibleVerse.fromJson(Map<String, dynamic> json) => BibleVerse(
         verse: json['verse'] as int,
         text: (json['text'] as String).trim(),
@@ -46,6 +53,9 @@ class BibleChapter {
     required this.verses,
   });
 
+  /// Builds a [BibleChapter] from bible-api.com's chapter-fetch response.
+  /// [translationId] is passed in separately because the API response
+  /// itself doesn't echo back which translation was requested.
   factory BibleChapter.fromApiJson(Map<String, dynamic> json, String translationId) {
     final verseRows = json['verses'] as List;
     final first = verseRows.first as Map<String, dynamic>;
@@ -60,9 +70,12 @@ class BibleChapter {
     );
   }
 
+  /// Human-readable reference for display, e.g. "John 3".
   String get reference => '$bookName $chapter';
 }
 
+/// A user's saved "come back to this chapter" bookmark, stored in
+/// Supabase's `bible_bookmarks` table.
 class BibleBookmark {
   final String id;
   final String translationId;
@@ -80,8 +93,10 @@ class BibleBookmark {
     required this.createdAt,
   });
 
+  /// Human-readable reference for display, e.g. "John 3".
   String get reference => '$bookName $chapter';
 
+  /// Builds a [BibleBookmark] from a Supabase row.
   factory BibleBookmark.fromRow(Map<String, dynamic> row) => BibleBookmark(
         id: row['id'] as String,
         translationId: row['translation_id'] as String,
@@ -92,12 +107,15 @@ class BibleBookmark {
       );
 }
 
+/// A user's highlight on a single verse, stored in Supabase's
+/// `bible_highlights` table.
 class BibleHighlight {
   final String id;
   final String translationId;
   final String bookId;
   final int chapter;
   final int verse;
+  /// Highlight color name (e.g. 'yellow') — interpreted by the reader UI.
   final String color;
 
   const BibleHighlight({
@@ -109,6 +127,7 @@ class BibleHighlight {
     required this.color,
   });
 
+  /// Builds a [BibleHighlight] from a Supabase row.
   factory BibleHighlight.fromRow(Map<String, dynamic> row) => BibleHighlight(
         id: row['id'] as String,
         translationId: row['translation_id'] as String,

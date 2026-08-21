@@ -15,6 +15,8 @@ PAYSTACK_BASE_URL = "https://api.paystack.co"
 
 
 class PaystackNotConfigured(RuntimeError):
+    """Raised when PAYSTACK_SECRET_KEY is unset; the API layer turns this into a 503."""
+
     pass
 
 

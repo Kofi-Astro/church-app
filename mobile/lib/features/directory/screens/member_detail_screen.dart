@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models.dart';
 
+/// Read-only detail view for a single member — shows their contact info
+/// (email/phone), or a note that none is on file.
 class MemberDetailScreen extends StatelessWidget {
   final Member member;
 

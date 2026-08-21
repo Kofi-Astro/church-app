@@ -1,3 +1,7 @@
+"""
+Routes for services (gatherings) and attendance check-ins, plus an attendance
+report and a CSV export of that report.
+"""
 import csv
 import io
 from datetime import date
@@ -24,6 +28,7 @@ require_mark = require_role("admin", "group_leader")
 require_read = require_role("admin", "finance_admin", "group_leader")
 
 
+# Creates a new service (e.g. "Sunday 9am"). admin/group_leader only.
 @router.post("/services", response_model=ServiceRead, status_code=status.HTTP_201_CREATED)
 async def create_service(
     payload: ServiceCreate,
@@ -35,6 +40,7 @@ async def create_service(
     return repo.create_service(data)
 
 
+# Lists services, optionally filtered to a date range. admin/finance_admin/group_leader.
 @router.get("/services", response_model=list[ServiceRead])
 async def list_services(
     start: date | None = Query(default=None),
@@ -45,6 +51,7 @@ async def list_services(
     return repo.list_services(start=start, end=end)
 
 
+# Checks a member in to a service; records who performed the check-in. admin/group_leader.
 @router.post("", response_model=AttendanceRead, status_code=status.HTTP_201_CREATED)
 async def mark_attendance(
     payload: AttendanceCreate,
@@ -56,6 +63,7 @@ async def mark_attendance(
     return repo.mark_attendance(data)
 
 
+# Lists everyone checked in to a given service. admin/finance_admin/group_leader.
 @router.get("/services/{service_id}/attendees", response_model=list[AttendanceRead])
 async def list_attendees(
     service_id: str,
@@ -65,6 +73,7 @@ async def list_attendees(
     return repo.list_for_service(service_id)
 
 
+# Attendee counts per service over a date range, as JSON. admin/finance_admin/group_leader.
 @router.get("/report", response_model=list[AttendanceReportRow])
 async def attendance_report(
     start: date | None = Query(default=None),
@@ -75,6 +84,7 @@ async def attendance_report(
     return repo.report(start=start, end=end)
 
 
+# Same report as above, but returned as a downloadable CSV file (for spreadsheets).
 @router.get("/report/export")
 async def attendance_report_csv(
     start: date | None = Query(default=None),
@@ -86,6 +96,8 @@ async def attendance_report_csv(
     if not rows:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No services in that date range")
 
+    # Build the CSV in memory (no temp file needed) then stream it back as an
+    # attachment so the browser/app downloads it instead of displaying it.
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(["service_id", "service_name", "service_date", "attendee_count"])

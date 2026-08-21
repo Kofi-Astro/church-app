@@ -7,6 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ReadingPlanProgressService {
   SupabaseClient get _client => Supabase.instance.client;
 
+  /// Returns the set of day numbers the current user has marked complete
+  /// for `planId`. Returns an empty set (rather than throwing) if nobody
+  /// is signed in to Supabase.
   Future<Set<int>> completedDays(String planId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return {};
@@ -18,6 +21,9 @@ class ReadingPlanProgressService {
     return (rows as List).map((r) => r['day_number'] as int).toSet();
   }
 
+  /// Marks `dayNumber` of `planId` as complete for the current user.
+  /// Uses upsert so calling this twice for the same day is a no-op rather
+  /// than an error.
   Future<void> markComplete({required String planId, required int dayNumber}) async {
     final userId = _client.auth.currentUser!.id;
     await _client.from('reading_plan_progress').upsert({
@@ -27,6 +33,7 @@ class ReadingPlanProgressService {
     });
   }
 
+  /// Undoes [markComplete] — removes the completion record for that day.
   Future<void> markIncomplete({required String planId, required int dayNumber}) async {
     final userId = _client.auth.currentUser!.id;
     await _client

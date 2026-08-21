@@ -21,11 +21,15 @@ class GivingScreen extends StatefulWidget {
   State<GivingScreen> createState() => _GivingScreenState();
 }
 
+// Holds the give-form fields/submitting state plus the separately-loaded
+// giving history list shown below the form.
 class _GivingScreenState extends State<GivingScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   GivingType _givingType = GivingType.tithe;
+  // True while a giving transaction is being initialized; disables the
+  // "Give now" button to prevent double submission.
   bool _submitting = false;
 
   List<GivingTransaction> _history = [];
@@ -44,6 +48,8 @@ class _GivingScreenState extends State<GivingScreen> {
     super.dispose();
   }
 
+  // Fetches the user's past giving transactions for the "Recent giving"
+  // section.
   Future<void> _loadHistory() async {
     setState(() => _loadingHistory = true);
     try {
@@ -59,6 +65,11 @@ class _GivingScreenState extends State<GivingScreen> {
     }
   }
 
+  // Validates the form, asks the backend to start a giving transaction,
+  // then opens Paystack's checkout URL in an external browser/app. A 503
+  // from the backend means Paystack isn't configured yet — that case is
+  // shown as a friendly dialog instead of a raw error (see the class
+  // comment above for why).
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
@@ -88,6 +99,8 @@ class _GivingScreenState extends State<GivingScreen> {
     }
   }
 
+  // Explains that Paystack isn't connected yet, rather than showing a
+  // confusing raw 503 error.
   Future<void> _showNotConfiguredDialog() {
     return showDialog(
       context: context,
@@ -118,6 +131,7 @@ class _GivingScreenState extends State<GivingScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // Giving-type picker (tithe/offering/special/other).
               DropdownButtonFormField<GivingType>(
                 initialValue: _givingType,
                 decoration: const InputDecoration(labelText: 'Giving type'),
@@ -130,6 +144,7 @@ class _GivingScreenState extends State<GivingScreen> {
                 },
               ),
               const SizedBox(height: 12),
+              // Amount field; must parse as a positive number.
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: 'Amount (GHS)', prefixText: 'GHS '),
@@ -147,6 +162,7 @@ class _GivingScreenState extends State<GivingScreen> {
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
+              // Submit button; disabled + spinner while submitting.
               FilledButton(
                 onPressed: _submitting ? null : _submit,
                 child: _submitting
@@ -155,6 +171,7 @@ class _GivingScreenState extends State<GivingScreen> {
                     : const Text('Give now'),
               ),
               const SizedBox(height: 32),
+              // Recent giving history list.
               Text('Recent giving', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               if (_loadingHistory)
@@ -179,6 +196,7 @@ class _GivingScreenState extends State<GivingScreen> {
     );
   }
 
+  // Text shown for each transaction's status in the history list.
   String _statusLabel(GivingStatus status) => switch (status) {
         GivingStatus.pending => 'Pending',
         GivingStatus.success => 'Completed',

@@ -23,10 +23,14 @@ class BibleSearchScreen extends StatefulWidget {
   State<BibleSearchScreen> createState() => _BibleSearchScreenState();
 }
 
+/// Manages the search query and results against the local offline cache.
 class _BibleSearchScreenState extends State<BibleSearchScreen> {
   List<BibleSearchHit> _hits = [];
+  // Whether a search has been run yet — before the first search, the
+  // screen shows an explanatory hint instead of an empty results list.
   bool _searched = false;
 
+  /// Runs a search against the locally cached (downloaded) chapters.
   Future<void> _search(String query) async {
     final hits = await widget.cache.search(query);
     setState(() {
