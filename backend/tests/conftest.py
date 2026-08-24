@@ -5,6 +5,7 @@ from app.core.deps import get_current_profile
 from app.main import app
 from app.repositories.attendance import get_attendance_repository
 from app.repositories.church_settings import get_church_settings_repository
+from app.repositories.congregations import get_congregation_repository
 from app.repositories.events import get_event_repository
 from app.repositories.giving import get_giving_repository
 from app.repositories.households import get_household_repository
@@ -17,6 +18,7 @@ from app.schemas.profile import Profile, Role
 from tests.fakes import (
     FakeAttendanceRepository,
     FakeChurchSettingsRepository,
+    FakeCongregationRepository,
     FakeEventRepository,
     FakeGivingRepository,
     FakeHouseholdRepository,
@@ -84,6 +86,11 @@ def fake_giving():
 
 
 @pytest.fixture
+def fake_congregations():
+    return FakeCongregationRepository()
+
+
+@pytest.fixture
 def client(
     fake_households,
     fake_members,
@@ -95,6 +102,7 @@ def client(
     fake_prayer_requests,
     fake_events,
     fake_giving,
+    fake_congregations,
 ):
     app.dependency_overrides[get_household_repository] = lambda: fake_households
     app.dependency_overrides[get_member_repository] = lambda: fake_members
@@ -106,6 +114,7 @@ def client(
     app.dependency_overrides[get_prayer_request_repository] = lambda: fake_prayer_requests
     app.dependency_overrides[get_event_repository] = lambda: fake_events
     app.dependency_overrides[get_giving_repository] = lambda: fake_giving
+    app.dependency_overrides[get_congregation_repository] = lambda: fake_congregations
     yield TestClient(app)
     app.dependency_overrides.clear()
 

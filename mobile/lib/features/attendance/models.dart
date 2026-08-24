@@ -7,12 +7,18 @@ class ChurchService {
   final String id;
   final String name;
   final DateTime serviceDate;
+  /// Which congregation (English, Akan, Youth Chapel, ...) this dated
+  /// gathering is for. Nullable in the read model only because rows from
+  /// before congregations existed may not have one — new services always
+  /// require one (see AttendanceService.createService).
+  final String? congregationId;
   final DateTime createdAt;
 
   const ChurchService({
     required this.id,
     required this.name,
     required this.serviceDate,
+    required this.congregationId,
     required this.createdAt,
   });
 
@@ -21,6 +27,7 @@ class ChurchService {
         id: json['id'] as String,
         name: json['name'] as String,
         serviceDate: DateTime.parse(json['service_date'] as String),
+        congregationId: json['congregation_id'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }
@@ -59,12 +66,14 @@ class AttendanceReportRow {
   final String serviceId;
   final String serviceName;
   final DateTime serviceDate;
+  final String? congregationId;
   final int attendeeCount;
 
   const AttendanceReportRow({
     required this.serviceId,
     required this.serviceName,
     required this.serviceDate,
+    required this.congregationId,
     required this.attendeeCount,
   });
 
@@ -73,6 +82,7 @@ class AttendanceReportRow {
         serviceId: json['service_id'] as String,
         serviceName: json['service_name'] as String,
         serviceDate: DateTime.parse(json['service_date'] as String),
+        congregationId: json['congregation_id'] as String?,
         attendeeCount: json['attendee_count'] as int,
       );
 }

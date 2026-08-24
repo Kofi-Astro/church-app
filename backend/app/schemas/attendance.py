@@ -16,6 +16,11 @@ class ServiceCreate(BaseModel):
 
     name: str = Field(min_length=1, max_length=200)
     service_date: date
+    # Which congregation (English, Akan, Youth Chapel, ...) this specific
+    # dated gathering is for — required so every new service is attributed
+    # to one of the church's standing service tracks. See
+    # app/schemas/congregation.py.
+    congregation_id: str
 
 
 class ServiceRead(BaseModel):
@@ -24,6 +29,9 @@ class ServiceRead(BaseModel):
     id: str
     name: str
     service_date: date
+    # Nullable in the read model even though creation requires it, since
+    # older rows from before congregations existed may not have one.
+    congregation_id: str | None
     created_at: datetime
 
 
@@ -52,4 +60,8 @@ class AttendanceReportRow(BaseModel):
     service_id: str
     service_name: str
     service_date: date
+    # Which congregation this service belonged to — lets the report be
+    # filtered/grouped per congregation instead of relying on parsing
+    # service names.
+    congregation_id: str | None
     attendee_count: int

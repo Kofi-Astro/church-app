@@ -74,6 +74,7 @@ class AttendanceRepository:
                     "service_id": service["id"],
                     "service_name": service["name"],
                     "service_date": service["service_date"],
+                    "congregation_id": service.get("congregation_id"),
                     "attendee_count": self.count_for_service(service["id"]),
                 }
             )

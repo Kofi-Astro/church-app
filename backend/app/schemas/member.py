@@ -16,6 +16,10 @@ class MemberCreate(BaseModel):
     phone: str | None = Field(default=None, max_length=30)
     # Optional link to the household this member belongs to.
     household_id: str | None = None
+    # Which congregation (English, Akan, Youth Chapel, ...) this member
+    # primarily belongs to. Optional — e.g. a new visitor may not have one
+    # assigned yet.
+    congregation_id: str | None = None
 
 
 class MemberUpdate(BaseModel):
@@ -25,6 +29,7 @@ class MemberUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=30)
     household_id: str | None = None
+    congregation_id: str | None = None
 
 
 class MemberRead(BaseModel):
@@ -35,6 +40,7 @@ class MemberRead(BaseModel):
     # a directory-only entry (e.g. added by an admin but hasn't signed up).
     profile_id: str | None
     household_id: str | None
+    congregation_id: str | None
     full_name: str
     email: str | None
     phone: str | None

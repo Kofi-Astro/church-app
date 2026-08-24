@@ -100,10 +100,18 @@ async def attendance_report_csv(
     # attachment so the browser/app downloads it instead of displaying it.
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["service_id", "service_name", "service_date", "attendee_count"])
+    writer.writerow(
+        ["service_id", "service_name", "service_date", "congregation_id", "attendee_count"]
+    )
     for row in rows:
         writer.writerow(
-            [row["service_id"], row["service_name"], row["service_date"], row["attendee_count"]]
+            [
+                row["service_id"],
+                row["service_name"],
+                row["service_date"],
+                row["congregation_id"],
+                row["attendee_count"],
+            ]
         )
     buffer.seek(0)
 

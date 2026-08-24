@@ -50,13 +50,14 @@ class DirectoryService {
     return PagedResult.fromJson(json as Map<String, dynamic>, Member.fromJson);
   }
 
-  /// Creates a new member, optionally attaching them to a household and
-  /// recording contact info.
+  /// Creates a new member, optionally attaching them to a household/
+  /// congregation and recording contact info.
   Future<Member> createMember({
     required String fullName,
     String? email,
     String? phone,
     String? householdId,
+    String? congregationId,
   }) async {
     final json = await _client.post(
       '/api/v1/members',
@@ -65,6 +66,7 @@ class DirectoryService {
         if (email != null && email.isNotEmpty) 'email': email,
         if (phone != null && phone.isNotEmpty) 'phone': phone,
         'household_id': ?householdId,
+        'congregation_id': ?congregationId,
       },
     );
     return Member.fromJson(json as Map<String, dynamic>);

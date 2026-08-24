@@ -1,7 +1,34 @@
 // Data models for the Small Groups feature: a group itself, its
-// members, and materials (links/resources) shared within it.
+// members, and materials (links/resources) shared within it. Auxiliaries
+// (Men's/Women's Auxiliary, Baptist Young Men/Women, ...) are also
+// [SmallGroup]s — see [GroupCategory] — reusing the same roster/materials
+// machinery rather than being a separate concept.
 
-/// A small group (e.g. a home fellowship or Bible study group).
+/// Whether a [SmallGroup] is an ordinary small/Bible-study group or a
+/// standing auxiliary (Men's Auxiliary, Royal Ambassadors, ...).
+enum GroupCategory { smallGroup, auxiliary }
+
+/// Parses the backend's category string; unrecognized/missing values fall
+/// back to [GroupCategory.smallGroup].
+GroupCategory groupCategoryFromString(String? value) =>
+    value == 'auxiliary' ? GroupCategory.auxiliary : GroupCategory.smallGroup;
+
+extension GroupCategoryLabel on GroupCategory {
+  /// Text shown in the category picker and to section group listings.
+  String get label => switch (this) {
+        GroupCategory.smallGroup => 'Small Group',
+        GroupCategory.auxiliary => 'Auxiliary',
+      };
+
+  /// Wire value sent to/received from the backend.
+  String get apiValue => switch (this) {
+        GroupCategory.smallGroup => 'small_group',
+        GroupCategory.auxiliary => 'auxiliary',
+      };
+}
+
+/// A small group or auxiliary (e.g. a home fellowship, Bible study group,
+/// or a standing auxiliary like Royal Ambassadors).
 class SmallGroup {
   final String id;
   final String name;
@@ -9,6 +36,7 @@ class SmallGroup {
   final String? description;
   /// Profile id of the group's leader, or null if no leader is assigned.
   final String? leaderId;
+  final GroupCategory category;
   final DateTime createdAt;
 
   const SmallGroup({
@@ -16,6 +44,7 @@ class SmallGroup {
     required this.name,
     required this.description,
     required this.leaderId,
+    required this.category,
     required this.createdAt,
   });
 
@@ -25,6 +54,7 @@ class SmallGroup {
         name: json['name'] as String,
         description: json['description'] as String?,
         leaderId: json['leader_id'] as String?,
+        category: groupCategoryFromString(json['category'] as String?),
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }

@@ -4,9 +4,13 @@ import '../../core/auth/auth_service.dart';
 import '../attendance/attendance_service.dart';
 import '../attendance/screens/attendance_report_screen.dart';
 import '../attendance/screens/service_list_screen.dart';
+import '../congregations/congregation_service.dart';
+import '../congregations/screens/congregation_list_screen.dart';
 import '../directory/directory_service.dart';
 import '../directory/screens/household_list_screen.dart';
 import '../directory/screens/member_search_screen.dart';
+import '../giving/giving_service.dart';
+import '../giving/screens/giving_report_screen.dart';
 import '../sermons/screens/livestream_settings_screen.dart';
 import '../sermons/sermon_service.dart';
 
@@ -19,6 +23,8 @@ class AdminDashboardScreen extends StatelessWidget {
   final DirectoryService directoryService;
   final AttendanceService attendanceService;
   final SermonService sermonService;
+  final CongregationService congregationService;
+  final GivingService givingService;
 
   const AdminDashboardScreen({
     super.key,
@@ -26,6 +32,8 @@ class AdminDashboardScreen extends StatelessWidget {
     required this.directoryService,
     required this.attendanceService,
     required this.sermonService,
+    required this.congregationService,
+    required this.givingService,
   });
 
   @override
@@ -33,9 +41,9 @@ class AdminDashboardScreen extends StatelessWidget {
     // Role checks gating each section below.
     final isAdminOrLeader = profile.role == AppRole.admin || profile.role == AppRole.groupLeader;
     final canSeeReports = profile.canAccessAdmin;
-    // Finance data stays behind a hard wall until Phase 5 — see
+    // Cross-member giving data stays behind a hard wall — see
     // docs/threat-model.md on why finance_admin is scoped this narrowly.
-    final canSeeGivingPreview = profile.role == AppRole.admin || profile.role == AppRole.financeAdmin;
+    final canSeeGivingReport = profile.role == AppRole.admin || profile.role == AppRole.financeAdmin;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Admin')),
@@ -64,8 +72,25 @@ class AdminDashboardScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      MemberSearchScreen(directoryService: directoryService, profile: profile),
+                  builder: (context) => MemberSearchScreen(
+                    directoryService: directoryService,
+                    congregationService: congregationService,
+                    profile: profile,
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.church_outlined),
+              title: const Text('Congregations'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CongregationListScreen(
+                    congregationService: congregationService,
+                    profile: profile,
+                  ),
                 ),
               ),
             ),
@@ -80,6 +105,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   builder: (context) => ServiceListScreen(
                     attendanceService: attendanceService,
                     directoryService: directoryService,
+                    congregationService: congregationService,
                     profile: profile,
                   ),
                 ),
@@ -116,16 +142,21 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
           ],
-          // Giving — disabled placeholder until Paystack is integrated
-          // (Phase 5); shown to admin/finance_admin so they know it's
-          // coming, but not tappable.
-          if (canSeeGivingPreview) ...[
+          // Giving report — every member's transactions, not just the
+          // signed-in admin's own (that's GivingScreen, on the Giving tab).
+          // admin/finance_admin only.
+          if (canSeeGivingReport) ...[
             const _SectionHeader('Giving'),
-            const ListTile(
-              leading: Icon(Icons.volunteer_activism_outlined),
-              title: Text('Giving & transactions'),
-              subtitle: Text('Coming in Phase 5 — Paystack integration'),
-              enabled: false,
+            ListTile(
+              leading: const Icon(Icons.volunteer_activism_outlined),
+              title: const Text('Giving report'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GivingReportScreen(givingService: givingService),
+                ),
+              ),
             ),
           ],
         ],

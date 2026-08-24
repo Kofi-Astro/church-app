@@ -32,8 +32,8 @@ is already pinned to 2.31.0 for this reason.
 
 SQL migrations live in `infra/migrations/`, numbered in order. Apply them
 via the Supabase SQL editor, the Supabase CLI, or `psql` directly against
-the project's connection string (Project Settings → Database). All 5 are
-already applied to `church-app-dev`; apply the same files to
+the project's connection string (Project Settings → Database). All of
+them are already applied to `church-app-dev`; apply the same files to
 `church-app-prod` in the same order when that project is created.
 
 Run migrations in order:
@@ -45,7 +45,17 @@ Run migrations in order:
 0005_community.sql
 0006_fix_profiles_rls.sql
 0007_giving.sql
+0008_congregations_and_auxiliaries.sql
 ```
+
+`0008` seeds the church's actual congregations (English, Akan, Youth
+Chapel, Teens Chapel, French Chapel, Northern Congregation, Children's
+Service) and a first batch of auxiliaries (Men's/Women's Auxiliary,
+Baptist Young Men/Women, Girls' Auxiliary, Royal Ambassadors) as real
+rows, not just schema — more of each can be added afterward through the
+app. Its RLS policies use the `current_profile_role()` helper from
+`0006` from the start, so it doesn't reintroduce the recursion bug that
+one fixed.
 
 Two of the migrations emit a harmless `NOTICE` about a policy name being
 truncated to Postgres's 63-character identifier limit — the policy still

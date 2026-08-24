@@ -65,7 +65,13 @@ class FakeMemberRepository:
         return self._rows.get(member_id)
 
     def create(self, data: dict):
-        row = {"profile_id": None, **data, "id": _new_id(), "created_at": _now()}
+        row = {
+            "profile_id": None,
+            "congregation_id": None,
+            **data,
+            "id": _new_id(),
+            "created_at": _now(),
+        }
         self._rows[row["id"]] = row
         return row
 
@@ -116,6 +122,7 @@ class FakeAttendanceRepository:
                     "service_id": service["id"],
                     "service_name": service["name"],
                     "service_date": service["service_date"],
+                    "congregation_id": service.get("congregation_id"),
                     "attendee_count": self.count_for_service(service["id"]),
                 }
             )
@@ -220,6 +227,7 @@ class FakeSmallGroupRepository:
         row = {
             "description": None,
             "leader_id": None,
+            "category": "small_group",
             **data,
             "id": _new_id(),
             "created_at": _now(),
@@ -330,6 +338,31 @@ class FakeEventRepository:
 
     def remove_rsvp(self, event_id: str, profile_id: str) -> None:
         self._rsvps.pop((event_id, profile_id), None)
+
+
+class FakeCongregationRepository:
+    def __init__(self):
+        self._rows: dict[str, dict] = {}
+
+    def list(self):
+        return sorted(self._rows.values(), key=lambda r: r["name"])
+
+    def get(self, congregation_id: str):
+        return self._rows.get(congregation_id)
+
+    def create(self, data: dict):
+        row = {"description": None, **data, "id": _new_id(), "created_at": _now()}
+        self._rows[row["id"]] = row
+        return row
+
+    def update(self, congregation_id: str, data: dict):
+        if congregation_id not in self._rows:
+            return None
+        self._rows[congregation_id].update(data)
+        return self._rows[congregation_id]
+
+    def delete(self, congregation_id: str) -> bool:
+        return self._rows.pop(congregation_id, None) is not None
 
 
 class FakeGivingRepository:

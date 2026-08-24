@@ -55,13 +55,15 @@ class _GroupListScreenState extends State<GroupListScreen> {
     }
   }
 
-  // Shows a dialog to enter a new group's name/description and optionally
-  // pick a leader (via MemberPickerScreen), then creates it if confirmed.
+  // Shows a dialog to enter a new group's name/description/category and
+  // optionally pick a leader (via MemberPickerScreen), then creates it if
+  // confirmed.
   Future<void> _showCreateGroupDialog() async {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
     String? leaderId;
     String? leaderName;
+    GroupCategory category = GroupCategory.smallGroup;
 
     final create = await showDialog<bool>(
       context: context,
@@ -79,6 +81,17 @@ class _GroupListScreenState extends State<GroupListScreen> {
               TextField(
                 controller: descriptionController,
                 decoration: const InputDecoration(labelText: 'Description (optional)'),
+              ),
+              DropdownButtonFormField<GroupCategory>(
+                initialValue: category,
+                decoration: const InputDecoration(labelText: 'Type'),
+                items: [
+                  for (final option in GroupCategory.values)
+                    DropdownMenuItem(value: option, child: Text(option.label)),
+                ],
+                onChanged: (value) {
+                  if (value != null) setDialogState(() => category = value);
+                },
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -117,6 +130,7 @@ class _GroupListScreenState extends State<GroupListScreen> {
         name: nameController.text.trim(),
         description: descriptionController.text.trim(),
         leaderId: leaderId,
+        category: category,
       );
       await _load();
     } catch (e) {
@@ -128,9 +142,14 @@ class _GroupListScreenState extends State<GroupListScreen> {
   @override
   Widget build(BuildContext context) {
     final canManage = widget.profile?.role == AppRole.admin;
+    // Split into two sections so auxiliaries (Men's Auxiliary, Royal
+    // Ambassadors, ...) read as distinct from ordinary small/Bible-study
+    // groups, even though both are the same SmallGroup under the hood.
+    final auxiliaries = _groups.where((g) => g.category == GroupCategory.auxiliary).toList();
+    final smallGroups = _groups.where((g) => g.category == GroupCategory.smallGroup).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Small Groups')),
+      appBar: AppBar(title: const Text('Groups')),
       floatingActionButton: canManage
           ? FloatingActionButton(onPressed: _showCreateGroupDialog, child: const Icon(Icons.add))
           : null,
@@ -149,28 +168,66 @@ class _GroupListScreenState extends State<GroupListScreen> {
                           ),
                         ],
                       )
-                    : ListView.builder(
-                        itemCount: _groups.length,
-                        itemBuilder: (context, index) {
-                          final group = _groups[index];
-                          return ListTile(
-                            title: Text(group.name),
-                            subtitle: group.description != null ? Text(group.description!) : null,
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => GroupDetailScreen(
-                                  group: group,
-                                  groupService: widget.groupService,
-                                  directoryService: widget.directoryService,
-                                  profile: widget.profile,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                    : ListView(
+                        children: [
+                          if (smallGroups.isNotEmpty) ...[
+                            const _GroupSectionHeader('Small Groups'),
+                            for (final group in smallGroups) _GroupTile(group: group, widget: widget),
+                          ],
+                          if (auxiliaries.isNotEmpty) ...[
+                            const _GroupSectionHeader('Auxiliaries'),
+                            for (final group in auxiliaries) _GroupTile(group: group, widget: widget),
+                          ],
+                        ],
                       ),
+      ),
+    );
+  }
+}
+
+/// Small uppercase label separating "Small Groups" from "Auxiliaries" in
+/// the list.
+class _GroupSectionHeader extends StatelessWidget {
+  final String title;
+  const _GroupSectionHeader(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context)
+            .textTheme
+            .labelMedium
+            ?.copyWith(color: Theme.of(context).colorScheme.primary),
+      ),
+    );
+  }
+}
+
+/// One row in the group list; tapping it opens [GroupDetailScreen].
+class _GroupTile extends StatelessWidget {
+  final SmallGroup group;
+  final GroupListScreen widget;
+  const _GroupTile({required this.group, required this.widget});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(group.name),
+      subtitle: group.description != null ? Text(group.description!) : null,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => GroupDetailScreen(
+            group: group,
+            groupService: widget.groupService,
+            directoryService: widget.directoryService,
+            profile: widget.profile,
+          ),
+        ),
       ),
     );
   }

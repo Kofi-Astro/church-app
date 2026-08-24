@@ -21,11 +21,17 @@ class AttendanceService {
         'end': end != null ? _dateOnly(end) : null,
       };
 
-  /// Creates a new church service (e.g. "Sunday Service") on [date].
-  Future<ChurchService> createService({required String name, required DateTime date}) async {
+  /// Creates a new church service (e.g. "Sunday Service") on [date] for a
+  /// specific [congregationId] — every new service must be attributed to
+  /// one of the church's congregations.
+  Future<ChurchService> createService({
+    required String name,
+    required DateTime date,
+    required String congregationId,
+  }) async {
     final json = await _client.post(
       '/api/v1/attendance/services',
-      body: {'name': name, 'service_date': _dateOnly(date)},
+      body: {'name': name, 'service_date': _dateOnly(date), 'congregation_id': congregationId},
     );
     return ChurchService.fromJson(json as Map<String, dynamic>);
   }

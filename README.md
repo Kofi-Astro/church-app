@@ -19,6 +19,20 @@ of a fake success. This is deliberate: the goal was to see the exact
 form/flow before wiring up real money, not to fake a payment. See
 `backend/app/core/paystack.py`.
 
+**Congregations & auxiliaries are built** — the church's distinct
+service tracks (English, Akan, Youth Chapel, Teens Chapel, French
+Chapel, Northern Congregation, Children's Service) are their own
+`congregations` table that members and dated `services` link to, so
+attendance is tracked per congregation rather than one shared calendar.
+Auxiliaries (Men's/Women's Auxiliary, Baptist Young Men/Women, Girls'
+Auxiliary, Royal Ambassadors) reuse the existing small-groups feature
+with a `category` field rather than being a separate concept — see
+`infra/migrations/0008_congregations_and_auxiliaries.sql`.
+
+**A web admin dashboard exists** alongside the phone app, built from the
+same Flutter codebase (`mobile/`) rather than a separate project — see
+"Web dashboard" below.
+
 ## Structure
 
 ```
@@ -76,6 +90,25 @@ Run analysis + tests:
 flutter analyze
 flutter test
 ```
+
+## Web dashboard — local setup
+
+The web build is a different app shell (`AdminWebShell`, a side-rail
+desktop layout), not the phone app's bottom-nav — see
+`mobile/lib/features/home/auth_gate.dart` for where that choice is made
+(`kIsWeb`). It's the same codebase and the same `dart_define.dev.json`
+as the phone app:
+
+```bash
+cd mobile
+flutter run -d chrome --dart-define-from-file=dart_define.dev.json
+```
+
+Signing in with a `member`-only account shows an explanatory
+"this dashboard is for admins" screen instead of the shell — the web
+build is for admin/group-leader/finance roles only. `flutter build web`
+produces a deployable `build/web/` directory for actual hosting once
+this is ready to go live (not committed — see `.gitignore`).
 
 ## CI
 

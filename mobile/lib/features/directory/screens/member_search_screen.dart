@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/auth_service.dart';
+import '../../congregations/congregation_service.dart';
+import '../../congregations/models.dart';
 import '../directory_service.dart';
 import '../models.dart';
 import 'member_detail_screen.dart';
@@ -12,11 +14,17 @@ import 'member_detail_screen.dart';
 /// accounts), and lets admins add new members.
 class MemberSearchScreen extends StatefulWidget {
   final DirectoryService directoryService;
+  final CongregationService congregationService;
   /// Current user's profile — used to decide whether the "add member"
   /// button is shown (admin-only). Null if not signed in.
   final AppProfile? profile;
 
-  const MemberSearchScreen({super.key, required this.directoryService, required this.profile});
+  const MemberSearchScreen({
+    super.key,
+    required this.directoryService,
+    required this.congregationService,
+    required this.profile,
+  });
 
   @override
   State<MemberSearchScreen> createState() => _MemberSearchScreenState();
@@ -68,41 +76,65 @@ class _MemberSearchScreenState extends State<MemberSearchScreen> {
     }
   }
 
-  /// Shows a dialog to collect a new member's name/email/phone, then
-  /// creates them via the API and re-runs the current search on success.
+  /// Shows a dialog to collect a new member's name/email/phone/congregation,
+  /// then creates them via the API and re-runs the current search on
+  /// success. The congregation dropdown is optional — a member can be added
+  /// without one and assigned later (e.g. a new visitor).
   Future<void> _showAddMemberDialog() async {
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
+    List<Congregation> congregations = [];
+    String? selectedCongregationId;
+    try {
+      congregations = await widget.congregationService.listCongregations();
+    } catch (_) {
+      // Congregation picker is a nice-to-have on this dialog — if it fails
+      // to load, member creation still works without one.
+    }
 
+    if (!mounted) return;
     final create = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add member'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Full name'),
-              autofocus: true,
-            ),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email (optional)'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(labelText: 'Phone (optional)'),
-              keyboardType: TextInputType.phone,
-            ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add member'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Full name'),
+                autofocus: true,
+              ),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email (optional)'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(labelText: 'Phone (optional)'),
+                keyboardType: TextInputType.phone,
+              ),
+              if (congregations.isNotEmpty)
+                DropdownButtonFormField<String?>(
+                  initialValue: selectedCongregationId,
+                  decoration: const InputDecoration(labelText: 'Congregation (optional)'),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Not assigned yet')),
+                    for (final congregation in congregations)
+                      DropdownMenuItem(value: congregation.id, child: Text(congregation.name)),
+                  ],
+                  onChanged: (value) => setDialogState(() => selectedCongregationId = value),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Create')),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Create')),
-        ],
       ),
     );
 
@@ -113,6 +145,7 @@ class _MemberSearchScreenState extends State<MemberSearchScreen> {
         fullName: nameController.text.trim(),
         email: emailController.text.trim(),
         phone: phoneController.text.trim(),
+        congregationId: selectedCongregationId,
       );
       await _search(_searchController.text);
     } catch (e) {

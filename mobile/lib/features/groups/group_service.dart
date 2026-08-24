@@ -15,12 +15,15 @@ class GroupService {
     return (json as List).map((e) => SmallGroup.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// Creates a new small group (admin-only on the backend). `leaderId` is
-  /// sent only if provided, using the `?` null-aware map-entry spread.
+  /// Creates a new small group or auxiliary (admin-only on the backend).
+  /// `leaderId` is sent only if provided, using the `?` null-aware
+  /// map-entry spread. Defaults to [GroupCategory.smallGroup] when
+  /// [category] isn't given.
   Future<SmallGroup> createGroup({
     required String name,
     String? description,
     String? leaderId,
+    GroupCategory category = GroupCategory.smallGroup,
   }) async {
     final json = await _client.post(
       '/api/v1/small-groups',
@@ -28,6 +31,7 @@ class GroupService {
         'name': name,
         if (description != null && description.isNotEmpty) 'description': description,
         'leader_id': ?leaderId,
+        'category': category.apiValue,
       },
     );
     return SmallGroup.fromJson(json as Map<String, dynamic>);

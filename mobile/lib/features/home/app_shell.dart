@@ -8,6 +8,7 @@ import '../bible/bible_api_service.dart';
 import '../bible/bible_cache.dart';
 import '../bible/bible_sync_service.dart';
 import '../bible/screens/bible_reader_screen.dart';
+import '../congregations/congregation_service.dart';
 import '../directory/directory_service.dart';
 import '../events/event_service.dart';
 import '../giving/giving_service.dart';
@@ -53,6 +54,7 @@ class _AppShellState extends State<AppShell> {
   late final PrayerService _prayerService;
   late final EventService _eventService;
   late final GivingService _givingService;
+  late final CongregationService _congregationService;
   late final BibleApiService _bibleApiService;
   late final BibleCache _bibleCache;
   late final BibleSyncService _bibleSyncService;
@@ -68,6 +70,7 @@ class _AppShellState extends State<AppShell> {
     _prayerService = PrayerService(widget.apiClient);
     _eventService = EventService(widget.apiClient);
     _givingService = GivingService(widget.apiClient);
+    _congregationService = CongregationService(widget.apiClient);
     _bibleApiService = BibleApiService();
     _bibleCache = BibleCache();
     _bibleSyncService = BibleSyncService();
@@ -132,6 +135,8 @@ class _AppShellState extends State<AppShell> {
             directoryService: _directoryService,
             attendanceService: _attendanceService,
             sermonService: _sermonService,
+            congregationService: _congregationService,
+            givingService: _givingService,
           ),
         ),
       _Tab(

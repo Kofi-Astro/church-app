@@ -38,4 +38,15 @@ class GivingService {
     ) as Map<String, dynamic>;
     return PagedResult.fromJson(json, GivingTransaction.fromJson);
   }
+
+  /// Fetches a page of *every* member's giving transactions, newest
+  /// first — admin/finance_admin only on the backend (see
+  /// backend/app/api/v1/giving.py's require_finance_read).
+  Future<PagedResult<GivingTransaction>> allTransactions({int limit = 25, int offset = 0}) async {
+    final json = await _client.get(
+      '/api/v1/giving/transactions',
+      query: {'limit': limit, 'offset': offset},
+    ) as Map<String, dynamic>;
+    return PagedResult.fromJson(json, GivingTransaction.fromJson);
+  }
 }

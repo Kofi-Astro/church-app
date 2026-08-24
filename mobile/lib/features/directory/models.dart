@@ -34,6 +34,9 @@ class Member {
   final String? profileId;
   /// Household this member belongs to, if any.
   final String? householdId;
+  /// Which congregation (English, Akan, Youth Chapel, ...) this member
+  /// primarily belongs to; null if not assigned yet (e.g. a new visitor).
+  final String? congregationId;
   final String fullName;
   final String? email;
   final String? phone;
@@ -43,6 +46,7 @@ class Member {
     required this.id,
     required this.profileId,
     required this.householdId,
+    required this.congregationId,
     required this.fullName,
     required this.email,
     required this.phone,
@@ -54,6 +58,7 @@ class Member {
         id: json['id'] as String,
         profileId: json['profile_id'] as String?,
         householdId: json['household_id'] as String?,
+        congregationId: json['congregation_id'] as String?,
         fullName: json['full_name'] as String,
         email: json['email'] as String?,
         phone: json['phone'] as String?,

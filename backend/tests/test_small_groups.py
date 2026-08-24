@@ -24,6 +24,16 @@ def test_any_signed_in_role_can_browse_group_directory(as_admin):
         assert len(response.json()) == 1
 
 
+def test_group_category_defaults_to_small_group_and_auxiliary_round_trips(as_admin):
+    default_category = as_admin.post("/api/v1/small-groups", json={"name": "Young Adults"}).json()
+    assert default_category["category"] == "small_group"
+
+    auxiliary = as_admin.post(
+        "/api/v1/small-groups", json={"name": "Royal Ambassadors", "category": "auxiliary"}
+    ).json()
+    assert auxiliary["category"] == "auxiliary"
+
+
 def test_group_materials_are_scoped_to_members_only(as_admin):
     """The Phase 3 DevSecOps negative test: a member of one group must not
     be able to read another group's materials, and a non-member gets the

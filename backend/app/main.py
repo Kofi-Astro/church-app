@@ -20,6 +20,11 @@ Phase 5 adds giving: /giving/initialize starts a Paystack transaction and
 endpoints are real, but PAYSTACK_SECRET_KEY isn't set anywhere yet, so
 initialize returns a clean 503 until the church's Paystack account is
 connected — see app/core/paystack.py.
+Adds congregations: the church's distinct standing service tracks
+(English, Akan, Youth Chapel, ...), which members and services can be
+linked to. Auxiliaries (Men's/Women's Auxiliary, Baptist Young Men/Women,
+...) reuse the existing small_groups endpoints with category='auxiliary'
+rather than getting their own routes — see app/schemas/small_group.py.
 """
 import logging
 from contextlib import asynccontextmanager
@@ -28,6 +33,7 @@ from fastapi import FastAPI  # type: ignore[import]
 
 from app.api.v1.attendance import router as attendance_router
 from app.api.v1.church_settings import router as church_settings_router
+from app.api.v1.congregations import router as congregations_router
 from app.api.v1.events import router as events_router
 from app.api.v1.giving import router as giving_router
 from app.api.v1.households import router as households_router
@@ -77,6 +83,7 @@ app.include_router(small_groups_router, prefix="/api/v1")
 app.include_router(prayer_requests_router, prefix="/api/v1")
 app.include_router(events_router, prefix="/api/v1")
 app.include_router(giving_router, prefix="/api/v1")
+app.include_router(congregations_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["system"])
